@@ -6,10 +6,15 @@
   "scripts": {
     "build": "rm -rf dist && tsc",
     "lint": "eslint '*/**/*.{js,ts}'",
+    "lint:errors": "yarn lint --quiet",
     "lint:fix": "yarn lint --fix",
-    "test": "jest",
     "prettier": "prettier src/**/* -l",
-    "prettier:fix": "yarn run prettier --write"
+    "prettier:fix": "yarn run prettier --write",
+    "test": "jest",
+    "test-debug": "node --inspect-brk ./node_modules/jest/bin/jest --runInBand",
+    "test-watch": "jest --watch",
+    "test:changed": "jest --onlyChanged --passWithNoTests --forceExit",
+    "ts:check": "tsc --noEmit"
   },
   "dependencies": {
     "@babel/runtime": "^7.18.9",
