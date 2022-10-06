@@ -46,10 +46,13 @@
     "url": "git+https://github.com/wayfair-incubator/gqmock.git"
   },
   "keywords": [
+    "api",
+    "federated",
+    "federation",
     "gql",
     "graphql",
     "mocking",
-    "api",
+    "mock",
     "service"
   ],
   "author": "@mmazur122",
