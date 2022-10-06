@@ -1,9 +1,26 @@
-# Open Source Project Template
+# `@wayfair/gqmock`: GQMock - GraphQL Mocking Service
 
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/gqmock?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/gqmock/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/gqmock/actions/workflows/validate.yml)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Maintainer](https://img.shields.io/badge/Maintainer-Wayfair-7F187F)](https://wayfair.github.io)
+
+## Table of Contents
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [About The Project](#about-the-project)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+- [Usage](#usage)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+- [Acknowledgements](#acknowledgements)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## About The Project
 
