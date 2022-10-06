@@ -1,7 +1,7 @@
 # Security Policies and Procedures
 
 This document outlines security procedures and general policies for the
-`<project name>` project.
+`GQMock - GraphQL Mocking Service` project.
 
 - [Reporting a Bug](#reporting-a-bug)
 - [Disclosure Policy](#disclosure-policy)
@@ -9,10 +9,11 @@ This document outlines security procedures and general policies for the
 
 ## Reporting a Bug
 
-The `<project name>` team and community take all security bugs in
-`<project name>` seriously.  Thank you for improving the security of
-`<project name>`. We appreciate your efforts and responsible disclosure and
-will make every effort to acknowledge your contributions.
+The `GQMock - GraphQL Mocking Service` team and community take all security bugs
+in `GQMock - GraphQL Mocking Service` seriously. Thank you for improving the
+security of `GQMock - GraphQL Mocking Service`. We appreciate your efforts and
+responsible disclosure and will make every effort to acknowledge your
+contributions.
 
 Report security bugs by emailing `OpenSource@wayfair.com`.
 

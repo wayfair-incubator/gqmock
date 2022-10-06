@@ -1,7 +1,7 @@
 {
   "name": "@wayfair/gqmock",
   "version": "0.1.0",
-  "description": "GraphQL Mocking Service",
+  "description": "GQMock - GraphQL Mocking Service",
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",

@@ -19,7 +19,7 @@ class MockServer {
 
     this.appServer = await app.listen({port: this.port}, () =>
       console.log({
-        message: `🚀 GraphQL Mocking Service listening on ${this.port}`,
+        message: `🚀 GQMock - GraphQL Mocking Service listening on ${this.port}`,
       })
     );
   }
