@@ -1,6 +1,13 @@
 import cloneDeep from 'lodash/cloneDeep';
 import escapeStringRegexp from 'escape-string-regexp';
 
+/**
+ * Append key to a path
+ *
+ * @param {string} currentKey - A dot separated object key path
+ * @param {string} key - A key to append to the existing key path
+ * @returns {string} A dot separated object key path
+ */
 function buildRollingKey(currentKey, key) {
   if (currentKey) {
     return `${currentKey}.${key}`;
@@ -9,6 +16,14 @@ function buildRollingKey(currentKey, key) {
   return key;
 }
 
+/**
+ * Creates a map of array item overrides based on the short-hand notation
+ * Example: $2: {"doesn't": "matter"} means that element indexed 0 will be {"doesn't": "matter"}
+ *
+ * @param {object} object - A short-hand notation definition of a list
+ * @param {string} metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
+ * @returns {object} A map of array item overrides
+ */
 function buildShorthandOverridesMap(object, metaPropertyPrefix) {
   return Object.entries(object).reduce((map, [key, value]) => {
     const overrideIndexWithoutPrefix = Number.parseInt(
@@ -22,6 +37,17 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
   }, {});
 }
 
+/**
+ * Returns the result of merging target into source
+ *
+ * @param {object} source - Source for the merge
+ * @param {object} target - Object to be merged into source
+ * @param {object} root0 - Supplemental options for recursive 'merge' calls
+ * @param {string} root0.rollingKey - A dot separated key path to keep track of the merge depth
+ * @param {string[]} root0.warnings - A list of warnings, e.g. discrepancies between source and target
+ * @param {string} root0.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
+ * @returns {object} A merged object and a list of warnings
+ */
 function merge(
   source,
   target,
@@ -127,6 +153,14 @@ function merge(
   };
 }
 
+/**
+ * Returns the result of merging target into source
+ *
+ * @param {object} source - Source for the merge
+ * @param {object} seed - Object to be merged into source
+ * @param {object} options - Merge options
+ * @returns {object} A merged object and a list of warnings
+ */
 function deepMerge(
   source: Record<string, unknown>,
   seed: Record<string, unknown>,

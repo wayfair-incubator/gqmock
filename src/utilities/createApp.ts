@@ -4,6 +4,9 @@ import seedRoutes from '../routes/seed';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
 
+/**
+ * @returns {express.Express} An express server instance
+ */
 export default function createApp(): express.Express {
   const app = express();
   const seedManager = new SeedManager();
@@ -17,11 +20,6 @@ export default function createApp(): express.Express {
     })
   );
 
-  /**
-   * Ready/health endpoint
-   *
-   * @route GET /health-check
-   */
   app.get('/health-check', (req, res) => {
     res.status(200).json({
       status: 'pass',

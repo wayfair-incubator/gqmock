@@ -14,5 +14,8 @@ and this project adheres to
 
 ### Added
 
-- Add initial library API:
-  - @TODO
+- Add initial library API
+  - `GraphqlMockingService`
+  - `GraphqlMockingContext`
+- Add a README
+- Add project configuration
