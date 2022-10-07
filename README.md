@@ -43,13 +43,23 @@
 
 ### The problem
 
-There isn't an easy way to customize mock data coming from Apollo Server without writing logic directly into the mock service implementation. This requires understanding the mock server templating implementation and hand rolling maintenance of that implementation directly.
+There isn't an easy way to customize mock data coming from Apollo Server without
+writing logic directly into the mock service implementation. This requires
+understanding the mock server templating implementation and hand rolling
+maintenance of that implementation directly.
 
-As these custom mocking implementations grow, logic inside of mock servers becomes complex and counter-productive. Writing automated tests for both Frontends and Backends becomes more difficult and coupled in undesired ways.
+As these custom mocking implementations grow, logic inside of mock servers
+becomes complex and counter-productive. Writing automated tests for both
+Frontends and Backends becomes more difficult and coupled in undesired ways.
 
 ### The solution
 
-`@wayfair/gqlmock` offers an easy way to seed the data returned by GraphQL operations. It masks the complexities of managing a mock server implementation and instead exposes a declarative API for expressing the deterministic data you need in your tests. There is no additional overhead for adding more tests to your test suite, and because each test has a unique context, running tests in parallel is 💯 supported! 
+`@wayfair/gqlmock` offers an easy way to seed the data returned by GraphQL
+operations. It masks the complexities of managing a mock server implementation
+and instead exposes a declarative API for expressing the deterministic data you
+need in your tests. There is no additional overhead for adding more tests to
+your test suite, and because each test has a unique context, running tests in
+parallel is 💯 supported!
 
 ## Getting Started
 
@@ -76,9 +86,9 @@ yarn add --dev @wayfair/gqmock
 
 ### `GraphqlMockingService`
 
-| Parameter Name      | Required | Description                                               | Type                      | Default                    |
-| ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
-| `port`           | No      | Port used to run the mock server           | number   | 5000                           |
+| Parameter Name | Required | Description                      | Type   | Default |
+| -------------- | -------- | -------------------------------- | ------ | ------- |
+| `port`         | No       | Port used to run the mock server | number | 5000    |
 
 #### `async GraphqlMockingService.start`
 
@@ -92,9 +102,9 @@ Stops the mocking server.
 
 Registers a schema with the mock server.
 
-| Parameter Name      | Required | Description                                               | Type                      | Default                    |
-| ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
-| `schema`           | Yes      | A valid GraphQL schema           | string   |                            |
+| Parameter Name | Required | Description            | Type   | Default |
+| -------------- | -------- | ---------------------- | ------ | ------- |
+| `schema`       | Yes      | A valid GraphQL schema | string |         |
 
 #### `GraphqlMockingService.createContext`
 
@@ -104,17 +114,18 @@ Creates a new `GraphqlMockingContext` instance with a unique `sequenceId`
 
 #### `GraphqlMockingContext.sequenceId`
 
-A unique string used to match GraphQL requests with registered seeds. `sequenceId` can be attached to requests using a custom Apollo Link:
+A unique string used to match GraphQL requests with registered seeds.
+`sequenceId` can be attached to requests using a custom Apollo Link:
 
 ```javascript
 import {ApolloLink} from '@apollo/client';
 
 const mockServiceLink = new ApolloLink((operation, forward) => {
-  operation.setContext(({ headers = {} }) => ({
+  operation.setContext(({headers = {}}) => ({
     headers: {
       ...headers,
-      ...(sequenceId ? {'mocking-sequence-id': sequenceId} : {})
-    }
+      ...(sequenceId ? {'mocking-sequence-id': sequenceId} : {}),
+    },
   }));
 
   return forward(operation);
@@ -125,31 +136,31 @@ const mockServiceLink = new ApolloLink((operation, forward) => {
 
 Registers a seed for a GraphQL operation.
 
-| Parameter Name      | Required | Description                                               | Type                      | Default                    |
-| ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
-| `operationName`           | Yes      | Name of the GraphQL operation           | string   |                            |
-| `operationSeedResponse`           | Yes      | See specific properties           | object   |                            |
-| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | object   | {}                           |
-| `operationSeedResponse.errors`           | No      | Errors to return           | object[]   |                            | []
-| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | object   | {}                           |
-| `options`           | No      | See specific properties          | object   | {}                           |
-| `options.usesLeft`           | No      | Uses left before discarding the seed          | number   | seed doesn't get discarded                           |
-| `options.partialArgs`           | No      | Allow partial matching of query arguments with the seed arguments          | boolean   | false                           |
+| Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- | --- |
+| `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
+| `operationSeedResponse`        | Yes      | See specific properties                                                                | object   |                            |
+| `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
+| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            | []  |
+| `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
+| `options`                      | No       | See specific properties                                                                | object   | {}                         |
+| `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
+| `options.partialArgs`          | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
 
 #### `async GraphqlMockingContext.networkError`
 
 Registers a seed for a network error.
 
-| Parameter Name      | Required | Description                                               | Type                      | Default                    |
-| ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
-| `operationName`           | Yes      | Name of the GraphQL operation           | string   |                            |
-| `operationSeedResponse`           | Yes      | Seed to be merged with the default apollo server mock           | object   |                            |
-| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | object   | {}                           |
-| `operationSeedResponse.errors`           | No      | Errors to return           | object[]   |                            | []
-| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | object   | {}                           |
-| `options`           | No      | See specific properties          | object   | {}                           |
-| `options.usesLeft`           | No      | Uses left before discarding the seed          | number   | seed doesn't get discarded                           |
-| `options.partialArgs`           | No      | Allow partial matching of query arguments with the seed arguments          | boolean   | false                           |
+| Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- | --- |
+| `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
+| `operationSeedResponse`        | Yes      | Seed to be merged with the default apollo server mock                                  | object   |                            |
+| `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
+| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            | []  |
+| `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
+| `options`                      | No       | See specific properties                                                                | object   | {}                         |
+| `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
+| `options.partialArgs`          | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
 
 ## Usage
 
@@ -157,43 +168,56 @@ Registers a seed for a network error.
 
 ```javascript
 describe('App', function () {
-    let mockingService;
-    beforeAll(async () => {
-        mockingService = new GraphqlMockingService({ port: 5000 });
-        await mockingService.start();
+  let mockingService;
+  beforeAll(async () => {
+    mockingService = new GraphqlMockingService({port: 5000});
+    await mockingService.start();
 
-        const schema = fs.readFileSync(path.resolve(__dirname, './schema.graphql'), 'utf-8');
-        await mockingService.registerSchema(schema);
-    });
-    
-    afterAll(async () => {
-        await mockingService.stop();
-    });
+    const schema = fs.readFileSync(
+      path.resolve(__dirname, './schema.graphql'),
+      'utf-8'
+    );
+    await mockingService.registerSchema(schema);
+  });
 
-    it('should work', async () => {
-        const seed = {
-            data: {
-                booksByGenreCursorConnection: {
-                    edges: [{}, {}, {
-                        "node": {
-                            "id": "Qm9vazo1",
-                            "title": "Harry Potter and the Chamber of Secrets",
-                            "author": {"id": "QXV0aG9yOjE=", "fullName": "J. K. Rowling", "__typename": "Author"},
-                            "__typename": "Book"
-                        }, "__typename": "BooksEdge"
-                    }],
-        
-                }
-            }
-        };
-        
-        const mockingContext = mockingService.createContext();
-        await mockingContext.operation('GetBooks', seed, { genre: 'ALL' });
+  afterAll(async () => {
+    await mockingService.stop();
+  });
 
-        render(<App sequenceId={mockingContext.sequenceId} />);
-        const books = await screen.findAllByText('Harry Potter and the Chamber of Secrets');
-        expect(books.length).toEqual(3);
-    });
+  it('should work', async () => {
+    const seed = {
+      data: {
+        booksByGenreCursorConnection: {
+          edges: [
+            {},
+            {},
+            {
+              node: {
+                id: 'Qm9vazo1',
+                title: 'Harry Potter and the Chamber of Secrets',
+                author: {
+                  id: 'QXV0aG9yOjE=',
+                  fullName: 'J. K. Rowling',
+                  __typename: 'Author',
+                },
+                __typename: 'Book',
+              },
+              __typename: 'BooksEdge',
+            },
+          ],
+        },
+      },
+    };
+
+    const mockingContext = mockingService.createContext();
+    await mockingContext.operation('GetBooks', seed, {genre: 'ALL'});
+
+    render(<App sequenceId={mockingContext.sequenceId} />);
+    const books = await screen.findAllByText(
+      'Harry Potter and the Chamber of Secrets'
+    );
+    expect(books.length).toEqual(3);
+  });
 });
 ```
 
@@ -201,25 +225,23 @@ describe('App', function () {
 
 ```javascript
 const context = service.createContext();
-await context
-  .operation(/* ... */)
-  .operation(/* ... */)
-  .networkError(/* ... */);
+await context.operation(/* ... */).operation(/* ... */).networkError(/* ... */);
 ```
 
 ### Define operation seed response data
 
-`data` is one of the allowed properties for `operationSeedResponse` registration parameter.
-It is supposed to mimic the query response defined by the registered schema. As such, `data` will
-be a composition of objects and arrays all the way to primitive leaf fields. You can define objects in the following way:
+`data` is one of the allowed properties for `operationSeedResponse` registration
+parameter. It is supposed to mimic the query response defined by the registered
+schema. As such, `data` will be a composition of objects and arrays all the way
+to primitive leaf fields. You can define objects in the following way:
 
 ```javascript
 const operationSeedResponse = {
-    data: {
-        productBySku: {
-            name: 'Flagship Table with Sku'
-        }
-    }
+  data: {
+    productBySku: {
+      name: 'Flagship Table with Sku',
+    },
+  },
 };
 ```
 
@@ -229,50 +251,52 @@ const operationSeedResponse = {
 
 ```javascript
 const operationSeedResponse = {
-    data: {
-        productBySku: {
-            name: 'Flagship Table with Sku',
-            variants: [
-                {},
-                {
-                    name: 'standing',
-                    tags: [{}, {value: 'adjustable'}],
-                }, 
-                {}, 
-                {
-                    name: 'office',
-                    tags: [{}, {value: 'adjustable'}],
-                }
-            ]
-        }
-    }
+  data: {
+    productBySku: {
+      name: 'Flagship Table with Sku',
+      variants: [
+        {},
+        {
+          name: 'standing',
+          tags: [{}, {value: 'adjustable'}],
+        },
+        {},
+        {
+          name: 'office',
+          tags: [{}, {value: 'adjustable'}],
+        },
+      ],
+    },
+  },
 };
 ```
 
-In this example, `variants` is a list of 4 elements, and `tags` is a list of 2 elements.
-In this notation, the last element is treated as the blueprint for _all_ elements for the array.
-However, this blueprint can be overridden by defining an element in any index other than the last index.
+In this example, `variants` is a list of 4 elements, and `tags` is a list of 2
+elements. In this notation, the last element is treated as the blueprint for
+_all_ elements for the array. However, this blueprint can be overridden by
+defining an element in any index other than the last index.
 
 ##### List short-hand notation
 
-The same lists can be defined using `$length` to define how many elements a list should have.
-`$<index>` is used to override selected items in the list. The prefix for both operations can be defined when
-the mocking service is initialized.
+The same lists can be defined using `$length` to define how many elements a list
+should have. `$<index>` is used to override selected items in the list. The
+prefix for both operations can be defined when the mocking service is
+initialized.
 
 ```javascript
 const operationSeedResponse = {
-    data: {
-        productBySku: {
-            name: 'Flagship Table with Sku',
-            variants: {
-                name: 'office',
-                tags: {value: 'adjustable', $length: 2},
-                $length: 4,
-                $2: { name: 'standing', tags: {value: 'adjustable', $length: 2}}
-            }
-        }
-    }
-}
+  data: {
+    productBySku: {
+      name: 'Flagship Table with Sku',
+      variants: {
+        name: 'office',
+        tags: {value: 'adjustable', $length: 2},
+        $length: 4,
+        $2: {name: 'standing', tags: {value: 'adjustable', $length: 2}},
+      },
+    },
+  },
+};
 ```
 
 ## Roadmap
