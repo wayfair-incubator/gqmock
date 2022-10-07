@@ -44,6 +44,7 @@
 ### The problem
 
 There isn't an easy way to customize mock data coming from Apollo Server without writing logic directly into the mock service implementation. This requires understanding the mock server templating implementation and hand rolling maintenance of that implementation directly.
+
 As these custom mocking implementations grow, logic inside of mock servers becomes complex and counter-productive. Writing automated tests for both Frontends and Backends becomes more difficult and coupled in undesired ways.
 
 ### The solution
