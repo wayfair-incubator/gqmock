@@ -137,11 +137,11 @@ const mockServiceLink = new ApolloLink((operation, forward) => {
 Registers a seed for a GraphQL operation.
 
 | Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
-| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- | --- |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- |
 | `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
 | `operationSeedResponse`        | Yes      | See specific properties                                                                | object   |                            |
 | `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
-| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            | []  |
+| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            |
 | `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
 | `options`                      | No       | See specific properties                                                                | object   | {}                         |
 | `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
@@ -152,11 +152,11 @@ Registers a seed for a GraphQL operation.
 Registers a seed for a network error.
 
 | Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
-| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- | --- |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- |
 | `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
 | `operationSeedResponse`        | Yes      | Seed to be merged with the default apollo server mock                                  | object   |                            |
 | `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
-| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            | []  |
+| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            |
 | `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
 | `options`                      | No       | See specific properties                                                                | object   | {}                         |
 | `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
