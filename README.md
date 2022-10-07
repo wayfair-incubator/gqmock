@@ -43,11 +43,12 @@
 
 ### The problem
 
-There isn't an easy way to customize mock data coming from Apollo Server. It makes it hard to write automated tests for both Frontents and Backends because of the existing mock limits.
+There isn't an easy way to customize mock data coming from Apollo Server without writing logic directly into the mock service implementation. This requires understanding the mock server templating implementation and hand rolling maintenance of that implementation directly.
+As these custom mocking implementations grow, logic inside of mock servers becomes complex and counter-productive. Writing automated tests for both Frontends and Backends becomes more difficult and coupled in undesired ways.
 
 ### The solution
 
-`gqlmock` offers an easy way to seed data returned by GraphQL operations. Each test can have a unique context which allows tests to be run in parallel. 
+`@wayfair/gqlmock` offers an easy way to seed the data returned by GraphQL operations. It masks the complexities of managing a mock server implementation and instead exposes a declarative API for expressing the deterministic data you need in your tests. There is no additional overhead for adding more tests to your test suite, and because each test has a unique context, running tests in parallel is 💯 supported! 
 
 ## Getting Started
 
@@ -126,11 +127,11 @@ Registers a seed for a GraphQL operation.
 | Parameter Name      | Required | Description                                               | Type                      | Default                    |
 | ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
 | `operationName`           | Yes      | Name of the GraphQL operation           | string   |                            |
-| `operationSeedResponse`           | Yes      | See specific properties           | JSON object   |                            |
-| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | JSON object   | {}                           |
-| `operationSeedResponse.errors`           | No      | Errors to return           | {}[]   |                            | []
-| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | JSON object   | {}                           |
-| `options`           | No      | See specific properties          | JSON object   | {}                           |
+| `operationSeedResponse`           | Yes      | See specific properties           | object   |                            |
+| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | object   | {}                           |
+| `operationSeedResponse.errors`           | No      | Errors to return           | object[]   |                            | []
+| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | object   | {}                           |
+| `options`           | No      | See specific properties          | object   | {}                           |
 | `options.usesLeft`           | No      | Uses left before discarding the seed          | number   | seed doesn't get discarded                           |
 | `options.partialArgs`           | No      | Allow partial matching of query arguments with the seed arguments          | boolean   | false                           |
 
@@ -141,11 +142,11 @@ Registers a seed for a network error.
 | Parameter Name      | Required | Description                                               | Type                      | Default                    |
 | ------------------- | -------- | --------------------------------------------------------- | ------------------------- | -------------------------- |
 | `operationName`           | Yes      | Name of the GraphQL operation           | string   |                            |
-| `operationSeedResponse`           | Yes      | Seed to be merged with the default apollo server mock           | JSON object   |                            |
-| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | JSON object   | {}                           |
-| `operationSeedResponse.errors`           | No      | Errors to return           | {}[]   |                            | []
-| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | JSON object   | {}                           |
-| `options`           | No      | See specific properties          | JSON object   | {}                           |
+| `operationSeedResponse`           | Yes      | Seed to be merged with the default apollo server mock           | object   |                            |
+| `operationSeedResponse.data`           | No      | Data to be merged with the default apollo server mock           | object   | {}                           |
+| `operationSeedResponse.errors`           | No      | Errors to return           | object[]   |                            | []
+| `operationMatchArguments`           | No      | Params used for matching a seed with GraphQL operations. By default matching is exact.           | object   | {}                           |
+| `options`           | No      | See specific properties          | object   | {}                           |
 | `options.usesLeft`           | No      | Uses left before discarding the seed          | number   | seed doesn't get discarded                           |
 | `options.partialArgs`           | No      | Allow partial matching of query arguments with the seed arguments          | boolean   | false                           |
 
@@ -221,9 +222,9 @@ const operationSeedResponse = {
 };
 ```
 
-There are two notations to define lists:
+#### Defining lists in response data
 
-#### List long-hand notation
+##### List long-hand notation
 
 ```javascript
 const operationSeedResponse = {
@@ -251,7 +252,7 @@ In this example, `variants` is a list of 4 elements, and `tags` is a list of 2 e
 In this notation, the last element is treated as the blueprint for _all_ elements for the array.
 However, this blueprint can be overridden by defining an element in any index other than the last index.
 
-#### List short-hand notation
+##### List short-hand notation
 
 The same lists can be defined using `$length` to define how many elements a list should have.
 `$<index>` is used to override selected items in the list. The prefix for both operations can be defined when
