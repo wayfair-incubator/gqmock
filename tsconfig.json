@@ -2,9 +2,7 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "lib": [
-      "ES2020"
-    ],
+    "lib": ["ES2020"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "noImplicitAny": false,
@@ -16,13 +14,8 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "target": "es2020",
+    "target": "es2020"
   },
-  "include": [
-    "./src/**/*"
-  ],
-  "exclude": [
-    "**/__tests__/*",
-    "**/__mocks__/*"
-  ]
+  "include": ["./src/**/*"],
+  "exclude": ["**/__*__/**/*"]
 }
