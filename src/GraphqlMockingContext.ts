@@ -10,6 +10,7 @@ import PrivatePromise from './utilities/PrivatePromise';
 
 type GraphqlMockingContextOptions = {
   server: MockServer;
+  sequenceId?: string;
 };
 
 export default class GraphqlMockingContext extends AsyncChainable {
@@ -17,7 +18,7 @@ export default class GraphqlMockingContext extends AsyncChainable {
   private server;
   constructor(private options: GraphqlMockingContextOptions) {
     super();
-    this.sequenceId = uuidv4();
+    this.sequenceId = options.sequenceId || uuidv4();
     this.server = options.server;
   }
 

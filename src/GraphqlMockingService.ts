@@ -3,12 +3,15 @@ import MockServer from './MockServer';
 
 type GraphqlMockingServiceOptions = {
   port?: number;
+  subgraph?: boolean;
 };
 
 export default class GraphqlMockingService {
   readonly server;
+  private subgraph;
   constructor(private options: GraphqlMockingServiceOptions = {}) {
     this.server = new MockServer({port: options.port});
+    this.subgraph = options.subgraph || false;
   }
 
   async start(): Promise<void> {
@@ -20,10 +23,10 @@ export default class GraphqlMockingService {
   }
 
   async registerSchema(schema: string): Promise<void> {
-    await this.server.registerSchema(schema);
+    await this.server.registerSchema(schema, {subgraph: this.subgraph});
   }
 
-  createContext(): GraphqlMockingContext {
-    return new GraphqlMockingContext({server: this.server});
+  createContext(sequenceId?: string): GraphqlMockingContext {
+    return new GraphqlMockingContext({server: this.server, sequenceId});
   }
 }
