@@ -2,6 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/wayfair-incubator/gqmock?display_name=tag)](CHANGELOG.md)
 [![Lint](https://github.com/wayfair-incubator/gqmock/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/wayfair-incubator/gqmock/actions/workflows/validate.yml)
+[![codecov](https://codecov.io/gh/wayfair-incubator/gqmock/branch/main/graph/badge.svg)][codecov]
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![Maintainer](https://img.shields.io/badge/Maintainer-Wayfair-7F187F)](https://wayfair.github.io)
 
@@ -332,3 +333,4 @@ This template was adapted from
 [yarn]: https://classic.yarnpkg.com
 [node]: https://nodejs.org
 [license]: https://github.com/wayfair-incubator/node-froid/blob/main/LICENSE
+[codecov]: https://codecov.io/gh/wayfair-incubator/gqmock
