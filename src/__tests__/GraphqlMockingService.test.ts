@@ -67,7 +67,10 @@ describe('GraphqlMockingService', () => {
     await mockingService.start();
     await mockingService.registerSchema(schema);
 
-    subgraphMockingService = new GraphqlMockingService({port: subgraphPort, subgraph: true});
+    subgraphMockingService = new GraphqlMockingService({
+      port: subgraphPort,
+      subgraph: true,
+    });
     await subgraphMockingService.start();
     await subgraphMockingService.registerSchema(subgraphSchema);
   });
@@ -527,34 +530,36 @@ describe('GraphqlMockingService', () => {
       {}
     );
 
-    const operationResult = await fetch(`http://localhost:${subgraphPort}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query:
-          'query getEmployee { getRandomEmployee { name } }',
-        variables: {},
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
+    const operationResult = await fetch(
+      `http://localhost:${subgraphPort}/graphql`,
+      {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query: 'query getEmployee { getRandomEmployee { name } }',
+          variables: {},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }
+    ).then((res) => res.json());
 
     expect(operationResult).toEqual({
       data: {
         getRandomEmployee: {
-          name: 'John'
-        }
-      }
+          name: 'John',
+        },
+      },
     });
 
     await subgraphMockingService.stop();
   });
 
-  it("should allow creating contexts with a shared sequenceId", function() {
+  it('should allow creating contexts with a shared sequenceId', function () {
     const contextA = mockingService.createContext();
-    const contextB = mockingService.createContext(contextA.sequenceId);
+    const contextB = subgraphMockingService.createContext(contextA.sequenceId);
 
     expect(contextA.sequenceId === contextB.sequenceId);
   });
