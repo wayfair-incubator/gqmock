@@ -87,9 +87,10 @@ yarn add --dev @wayfair/gqmock
 
 ### `GraphqlMockingService`
 
-| Parameter Name | Required | Description                      | Type   | Default |
-| -------------- | -------- | -------------------------------- | ------ | ------- |
-| `port`         | No       | Port used to run the mock server | number | 5000    |
+| Parameter Name      | Required | Description                      | Type    | Default |
+| ------------------- | -------- | -------------------------------- | ------- | ------- |
+| `port`              | No       | Port used to run the mock server | number  | 5000    |
+| `subgraph`          | No       | Enable subgraph schema support   | boolean | false   |
 
 #### `async GraphqlMockingService.start`
 
@@ -110,6 +111,10 @@ Registers a schema with the mock server.
 #### `GraphqlMockingService.createContext`
 
 Creates a new `GraphqlMockingContext` instance with a unique `sequenceId`
+
+| Parameter Name | Required | Description                         | Type   | Default |
+| -------------- | -------- | ----------------------------------- | ------ | ------- |
+| `sequenceId`   | No       | A string to be used as a sequenceId | string | uuid    |
 
 ### `GraphqlMockingContext`
 
@@ -320,6 +325,7 @@ information.
 ## Contact
 
 - **Mark Faga**: [Twitter](https://twitter.com/markjfaga)
+- **Michal Mazur** [Email](mailto:michal.mazur221@gmail.com)
 
 Project Link:
 [https://github.com/wayfair-incubator/gqmock](https://github.com/wayfair-incubator/gqmock)

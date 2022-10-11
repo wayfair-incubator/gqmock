@@ -7,6 +7,10 @@ type MockServerOptions = {
   port?: number;
 };
 
+type SchemaRegistrationOptions = {
+  subgraph: boolean;
+};
+
 class MockServer {
   readonly port;
   private appServer;
@@ -28,11 +32,15 @@ class MockServer {
     await this.appServer.close();
   }
 
-  registerSchema(schema: string): Promise<Response> {
+  registerSchema(
+    schema: string,
+    options: SchemaRegistrationOptions
+  ): Promise<Response> {
     return fetch(`http://localhost:${this.port}/graphql/register-schema`, {
       method: 'post',
       body: JSON.stringify({
         schema,
+        options,
       }),
       headers: {
         'Content-Type': 'application/json',

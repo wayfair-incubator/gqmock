@@ -10,6 +10,14 @@ and this project adheres to
 
 ### TBA
 
+## [v0.2.0] - 2022-10-06
+
+### Added
+
+- Add support for subgraph schemas.
+- Add the option to create multiple contexts with the same `sequenceId`
+
+
 ## [v0.1.0] - 2022-10-06
 
 ### Added
@@ -19,3 +27,4 @@ and this project adheres to
   - `GraphqlMockingContext`
 - Add a README
 - Add project configuration
+
