@@ -162,7 +162,7 @@ export default class SeedManager {
       });
     } else {
       console.log({
-        message: `🟢 found matching seed}`,
+        message: `🟢 found matching seed`,
       });
     }
 
