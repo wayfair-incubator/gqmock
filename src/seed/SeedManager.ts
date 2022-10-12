@@ -6,6 +6,7 @@ import {
   Seed,
   SeedOptions,
 } from './types';
+import GraphqlMockingContextLogger from '../utilities/Logger';
 
 export enum SeedType {
   Operation = 'operation',
@@ -117,6 +118,10 @@ export default class SeedManager {
       !this.seedCache[sequenceId] ||
       !this.seedCache[sequenceId][operationName]
     ) {
+      GraphqlMockingContextLogger.info(
+        `🟡 no matching seed found for operationName: ${operationName}`,
+        sequenceId
+      );
       return {
         seed: {},
         seedIndex: -1,
@@ -148,6 +153,19 @@ export default class SeedManager {
     );
 
     const seed = this.seedCache[sequenceId][operationName][seedIndex] || {};
+
+    if (seedIndex === -1) {
+      GraphqlMockingContextLogger.info(
+        `🟡 matching seed found but operation arguments: ${JSON.stringify(
+          operationArguments,
+          null,
+          2
+        )} are not a match `,
+        sequenceId
+      );
+    } else {
+      GraphqlMockingContextLogger.info(`🟢 found matching seed`, sequenceId);
+    }
 
     return {
       seed,

@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.2.2] - 2022-10-12
+
+### Added
+
+- Added seed matching logs
+
 ## [v0.2.1] - 2022-10-11
 
 ### Added
