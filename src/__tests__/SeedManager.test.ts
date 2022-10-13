@@ -196,6 +196,31 @@ describe('Seed Manager', () => {
         },
       });
     });
+
+    it('should allow array args matching', function () {
+      const sequenceId = 'sequenceId';
+      const seed = {
+        operationName: 'operationA',
+        operationSeedResponse: {data: {product: 'my product'}},
+        operationMatchArguments: {sku: [{type: '1'}, {type: '2'}]},
+      };
+      const type = SeedType.Operation;
+
+      seedManager.registerSeed(sequenceId, type, seed);
+      expect(
+        seedManager.findSeed(sequenceId, seed.operationName, {
+          sku: [{type: '1'}, {type: '2'}],
+        }).seed
+      ).toEqual({
+        type,
+        operationSeedResponse: seed.operationSeedResponse,
+        operationMatchArguments: seed.operationMatchArguments,
+        options: {
+          usesLeft: -1,
+          partialArgs: false,
+        },
+      });
+    });
   });
 
   describe('mergeOperationResponse', function () {

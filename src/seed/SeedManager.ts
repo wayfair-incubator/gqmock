@@ -7,6 +7,7 @@ import {
   SeedOptions,
 } from './types';
 import GraphqlMockingContextLogger from '../utilities/Logger';
+import isEqual from 'lodash.isequal';
 
 export enum SeedType {
   Operation = 'operation',
@@ -134,8 +135,10 @@ export default class SeedManager {
           ([argumentName, argumentValue]) => {
             return (
               seedDefinition.operationMatchArguments &&
-              seedDefinition.operationMatchArguments[argumentName] ===
+              isEqual(
+                seedDefinition.operationMatchArguments[argumentName],
                 argumentValue
+              )
             );
           }
         );
