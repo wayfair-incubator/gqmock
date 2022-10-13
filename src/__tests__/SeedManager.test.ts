@@ -197,7 +197,7 @@ describe('Seed Manager', () => {
       });
     });
 
-    it('should allow array args matching', function () {
+    it('should allow deep args matching', function () {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
