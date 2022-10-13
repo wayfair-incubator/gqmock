@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.2.3] - 2022-10-13
+
+### Fixed
+
+- Use deep compare for matching operation arguments
+
 ## [v0.2.2] - 2022-10-12
 
 ### Added
