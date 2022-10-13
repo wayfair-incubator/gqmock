@@ -7,7 +7,7 @@ import {
   SeedOptions,
 } from './types';
 import GraphqlMockingContextLogger from '../utilities/Logger';
-import isEqual from 'lodash.isequal';
+import {isEqual} from 'lodash';
 
 export enum SeedType {
   Operation = 'operation',
