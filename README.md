@@ -87,10 +87,10 @@ yarn add --dev @wayfair/gqmock
 
 ### `GraphqlMockingService`
 
-| Parameter Name      | Required | Description                      | Type    | Default |
-| ------------------- | -------- | -------------------------------- | ------- | ------- |
-| `port`              | No       | Port used to run the mock server | number  | 5000    |
-| `subgraph`          | No       | Enable subgraph schema support   | boolean | false   |
+| Parameter Name | Required | Description                      | Type    | Default |
+| -------------- | -------- | -------------------------------- | ------- | ------- |
+| `port`         | No       | Port used to run the mock server | number  | 5000    |
+| `subgraph`     | No       | Enable subgraph schema support   | boolean | false   |
 
 #### `async GraphqlMockingService.start`
 
