@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.2.4] - 2022-10-17
+
+### Fixed
+
+- Handle falsy values correctly in merge logic
+
 ## [v0.2.3] - 2022-10-13
 
 ### Fixed
