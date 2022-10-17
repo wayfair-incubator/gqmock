@@ -136,7 +136,12 @@ function merge(
       } else {
         source[targetKey] = targetValue;
       }
-    } else if (source[targetKey] === null) {
+    } else if (
+      source[targetKey] === null ||
+      source[targetKey] === false ||
+      source[targetKey] === 0 ||
+      source[targetKey] === ''
+    ) {
       source[targetKey] = targetValue;
     } else {
       if (targetKey.indexOf(metaPropertyPrefix) === 0) {

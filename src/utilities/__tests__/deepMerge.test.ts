@@ -141,6 +141,36 @@ describe('deepMerge', () => {
     );
   });
 
+  it('should merge data with falsy values in source', function () {
+    const source = {
+      data: {
+        item: {
+          hasThing: false,
+        },
+      },
+    };
+
+    const seed = {
+      data: {
+        item: {
+          hasThing: true,
+        },
+      },
+    };
+
+    const expectedResult = {
+      data: {
+        item: {
+          hasThing: true,
+        },
+      },
+    };
+
+    const mergeResult = deepMerge(source, seed);
+    expect(mergeResult.data).toEqual(expectedResult);
+    expect(mergeResult.warnings.length).toEqual(0);
+  });
+
   it('should merge arrays using longhand notation', function () {
     const source = {
       data: {
