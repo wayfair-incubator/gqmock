@@ -72,6 +72,7 @@ const graphqlRoutes = (
       variables,
       operationMock: operationResult,
       sequenceId,
+      schema: apolloServerManager.schema,
     });
 
     seededQueryResult.warnings?.forEach((warning) => {

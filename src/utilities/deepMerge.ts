@@ -54,7 +54,7 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
 function merge(
   source,
   target,
-  schema: GraphQLSchema,
+  schema: GraphQLSchema | null,
   {
     rollingKey = '',
     warnings = new Set(),
@@ -70,7 +70,8 @@ function merge(
 } {
   const hasSourceAndTargetTypeMismatch =
     typeof target.__typename === 'string' &&
-    source.__typename !== target.__typename;
+    source.__typename !== target.__typename &&
+    schema !== null;
 
   Object.entries(target).forEach(([targetKey, targetValue]) => {
     const newRollingKey = buildRollingKey(rollingKey, targetKey);
@@ -203,7 +204,7 @@ function merge(
 function deepMerge(
   source: Record<string, unknown>,
   seed: Record<string, unknown>,
-  schema: GraphQLSchema,
+  schema: GraphQLSchema | null,
   options = {}
 ): {
   data: Record<string, unknown>;

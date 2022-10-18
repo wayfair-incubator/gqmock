@@ -1,6 +1,6 @@
 import {ApolloServer, gql} from 'apollo-server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
-import {parse} from 'graphql';
+import {GraphQLSchema, parse, buildSchema} from 'graphql';
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
@@ -8,8 +8,13 @@ type SchemaRegistrationOptions = {
 
 export default class ApolloServerManager {
   private apolloServerInstance;
+  private graphQLSchema: GraphQLSchema | null = null;
   get apolloServer(): ApolloServer | null {
     return this.apolloServerInstance || null;
+  }
+
+  get schema(): GraphQLSchema | null {
+    return this.graphQLSchema;
   }
 
   createApolloServer(schema: string, options: SchemaRegistrationOptions): void {
@@ -26,5 +31,7 @@ export default class ApolloServerManager {
         mocks: true,
       });
     }
+
+    this.graphQLSchema = buildSchema(schema);
   }
 }

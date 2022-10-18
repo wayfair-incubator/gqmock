@@ -8,6 +8,7 @@ import {
 } from './types';
 import GraphqlMockingContextLogger from '../utilities/Logger';
 import {isEqual} from 'lodash';
+import {GraphQLSchema} from 'graphql';
 
 export enum SeedType {
   Operation = 'operation',
@@ -181,11 +182,13 @@ export default class SeedManager {
     variables,
     operationMock,
     sequenceId,
+    schema,
   }: {
     operationName: string;
     variables: Record<string, unknown>;
     operationMock: {data: Record<string, unknown>; errors: object[]};
     sequenceId: string;
+    schema: GraphQLSchema | null;
   }): {
     data: Record<string, unknown>;
     errors?: object[];
@@ -206,7 +209,8 @@ export default class SeedManager {
             [];
           const seededMock = deepMerge(
             {data: operationMock.data || null},
-            {data: validSeed.operationSeedResponse.data || {}}
+            {data: validSeed.operationSeedResponse.data || {}},
+            schema
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
           return {
