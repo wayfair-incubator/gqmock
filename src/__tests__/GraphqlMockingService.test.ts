@@ -1,5 +1,4 @@
 import fetch from 'node-fetch';
-
 import GraphqlMockingService from '../GraphqlMockingService';
 
 const schema = `
@@ -62,7 +61,11 @@ describe('GraphqlMockingService', () => {
   let mockingService;
   let subgraphMockingService;
   const sequenceId = 'test-sequence-id';
+  const consoleLogOrig = console.log;
+  const consoleInfoOrig = console.info;
   beforeAll(async () => {
+    console.log = jest.fn();
+    console.info = jest.fn();
     mockingService = new GraphqlMockingService({port});
     await mockingService.start();
     await mockingService.registerSchema(schema);
@@ -76,6 +79,8 @@ describe('GraphqlMockingService', () => {
   });
 
   afterAll(async () => {
+    console.log = consoleLogOrig;
+    console.info = consoleInfoOrig;
     await mockingService.stop();
     await subgraphMockingService.stop();
   });
