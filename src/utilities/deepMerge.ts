@@ -44,8 +44,8 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  *
  * @param {object} source - Source for the merge
  * @param {object} target - Object to be merged into source
- * @param {object} root0 - Supplemental options for recursive 'merge' calls
  * @param {object} schema - Schema used for source and target data
+ * @param {object} root0 - Supplemental options for recursive 'merge' calls
  * @param {string} root0.rollingKey - A dot separated key path to keep track of the merge depth
  * @param {string[]} root0.warnings - A list of warnings, e.g. discrepancies between source and target
  * @param {string} root0.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
