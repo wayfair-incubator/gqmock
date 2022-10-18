@@ -1,5 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import escapeStringRegexp from 'escape-string-regexp';
+import {GraphQLSchema} from 'graphql';
+import {doesFieldExistOnType, getFieldsOnType} from './validate';
 
 /**
  * Append key to a path
@@ -43,6 +45,7 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {object} source - Source for the merge
  * @param {object} target - Object to be merged into source
  * @param {object} root0 - Supplemental options for recursive 'merge' calls
+ * @param {object} schema - Schema used for source and target data
  * @param {string} root0.rollingKey - A dot separated key path to keep track of the merge depth
  * @param {string[]} root0.warnings - A list of warnings, e.g. discrepancies between source and target
  * @param {string} root0.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
@@ -51,6 +54,7 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
 function merge(
   source,
   target,
+  schema: GraphQLSchema,
   {
     rollingKey = '',
     warnings = new Set(),
@@ -64,6 +68,10 @@ function merge(
   data: Record<string, unknown>;
   warnings: Set<string>;
 } {
+  const hasSourceAndTargetTypeMismatch =
+    typeof target.__typename === 'string' &&
+    source.__typename !== target.__typename;
+
   Object.entries(target).forEach(([targetKey, targetValue]) => {
     const newRollingKey = buildRollingKey(rollingKey, targetKey);
     if (source[targetKey]) {
@@ -75,7 +83,7 @@ function merge(
           ...Array(targetValue[`${metaPropertyPrefix}length`]).keys(),
         ].map(() => {
           return cloneDeep(
-            merge(source[targetKey][0], targetValue, {
+            merge(source[targetKey][0], targetValue, schema, {
               rollingKey: newRollingKey,
               warnings,
               metaPropertyPrefix,
@@ -89,7 +97,7 @@ function merge(
         );
         Object.entries(shorthandOverrides).forEach(([index, overrideValue]) => {
           source[targetKey][index] = cloneDeep(
-            merge(source[targetKey][index], overrideValue, {
+            merge(source[targetKey][index], overrideValue, schema, {
               rollingKey: newRollingKey,
               warnings,
               metaPropertyPrefix,
@@ -104,7 +112,7 @@ function merge(
             if (lastTargetArrayItem instanceof Object) {
               if (Object.entries(item).length) {
                 return cloneDeep(
-                  merge(sourceItem, item, {
+                  merge(sourceItem, item, schema, {
                     rollingKey: newRollingKey,
                     warnings,
                     metaPropertyPrefix,
@@ -112,7 +120,7 @@ function merge(
                 );
               }
               return cloneDeep(
-                merge(sourceItem, lastTargetArrayItem, {
+                merge(sourceItem, lastTargetArrayItem, schema, {
                   rollingKey: newRollingKey,
                   warnings,
                   metaPropertyPrefix,
@@ -128,7 +136,7 @@ function merge(
           );
         }
       } else if (targetValue instanceof Object) {
-        return merge(source[targetKey], targetValue, {
+        return merge(source[targetKey], targetValue, schema, {
           rollingKey: newRollingKey,
           warnings,
           metaPropertyPrefix,
@@ -143,6 +151,15 @@ function merge(
       source[targetKey] === ''
     ) {
       source[targetKey] = targetValue;
+    } else if (
+      hasSourceAndTargetTypeMismatch &&
+      doesFieldExistOnType({
+        field: targetKey,
+        type: target.__typename,
+        schema,
+      })
+    ) {
+      source[targetKey] = targetValue;
     } else {
       if (targetKey.indexOf(metaPropertyPrefix) === 0) {
         //ignore shorthand meta properties
@@ -151,6 +168,22 @@ function merge(
       }
     }
   });
+
+  if (hasSourceAndTargetTypeMismatch) {
+    const validFieldsForType = getFieldsOnType({
+      type: target.__typename,
+      schema,
+    });
+
+    Object.keys(source).forEach((sourceKey) => {
+      if (
+        sourceKey !== '__typename' &&
+        !validFieldsForType.includes(sourceKey)
+      ) {
+        delete source[sourceKey];
+      }
+    });
+  }
 
   return {
     data: source,
@@ -163,18 +196,20 @@ function merge(
  *
  * @param {object} source - Source for the merge
  * @param {object} seed - Object to be merged into source
+ * @param {object} schema - Schema used for source and target data
  * @param {object} options - Merge options
  * @returns {object} A merged object and a list of warnings
  */
 function deepMerge(
   source: Record<string, unknown>,
   seed: Record<string, unknown>,
+  schema: GraphQLSchema,
   options = {}
 ): {
   data: Record<string, unknown>;
   warnings: string[];
 } {
-  const {data, warnings} = merge(cloneDeep(source), seed, options);
+  const {data, warnings} = merge(cloneDeep(source), seed, schema, options);
   return {
     data,
     warnings: Array.from(warnings),

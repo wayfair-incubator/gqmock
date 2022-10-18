@@ -1,4 +1,57 @@
 import deepMerge from '../deepMerge';
+import {buildSchema} from 'graphql';
+
+const schemaSource = `
+    interface Product {
+        name: String
+    }
+    
+    type ConcreteProduct implements Product {
+        name: String
+        type: String
+    }
+    
+    interface Item {
+        id: String
+    }
+    
+    type ItemOne implements Item {
+        id: String
+        someField1: String
+    }
+    
+    type ItemTwo implements Item {
+        id: String
+        someField2: String
+    }
+    
+    type ItemThree implements Item {
+        id: String
+        someField3: String
+    }
+    
+    type ItemFour implements Item {
+        id: String
+        someField4: String
+    }
+    
+    type ItemFive implements Item {
+        id: String
+        someField5: String
+    }
+    
+    type Query {
+        product: Product
+        item: Item
+    }
+    
+    enum SomeEnum {
+        ONE
+        TWO
+    }
+`;
+
+const schema = buildSchema(schemaSource);
 
 describe('deepMerge', () => {
   it('should merge source with a partially defined object', function () {
@@ -40,7 +93,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -76,7 +129,7 @@ describe('deepMerge', () => {
 
     const expectedResult = seed;
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -130,7 +183,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(2);
     expect(mergeResult.warnings).toContain(
@@ -166,7 +219,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -219,7 +272,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -272,7 +325,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -393,7 +446,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -510,7 +563,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -563,7 +616,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -620,7 +673,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -674,7 +727,9 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, {metaPropertyPrefix: '$_$'});
+    const mergeResult = deepMerge(source, seed, schema, {
+      metaPropertyPrefix: '$_$',
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -712,7 +767,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -768,7 +823,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -811,7 +866,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -844,7 +899,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -876,7 +931,43 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed);
+    const mergeResult = deepMerge(source, seed, schema);
+    expect(mergeResult.data).toEqual(expectedResult);
+    expect(mergeResult.warnings.length).toEqual(0);
+  });
+
+  it('should merge data that matches valid type in interface', function () {
+    const source = {
+      data: {
+        item: {
+          __typename: 'ItemOne',
+          id: 'string',
+          someField1: 'string',
+        },
+      },
+    };
+
+    const seed = {
+      data: {
+        item: {
+          __typename: 'ItemTwo',
+          id: 'string',
+          someField2: 'string',
+        },
+      },
+    };
+
+    const expectedResult = {
+      data: {
+        item: {
+          __typename: 'ItemTwo',
+          id: 'string',
+          someField2: 'string',
+        },
+      },
+    };
+
+    const mergeResult = deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
