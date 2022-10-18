@@ -29,10 +29,41 @@ const schema = `
         dimensions: Dimensions
     }
     
+    
+    interface Item {
+        id: String
+    }
+    
+    type ItemOne implements Item {
+        id: String
+        someField1: String
+    }
+    
+    type ItemTwo implements Item {
+        id: String
+        someField2: String
+    }
+    
+    type ItemThree implements Item {
+        id: String
+        someField3: String
+    }
+    
+    type ItemFour implements Item {
+        id: String
+        someField4: String
+    }
+    
+    type ItemFive implements Item {
+        id: String
+        someField5: String
+    }
+    
     type Query {
         products: [Product]
         productByName(name: String!): Product
         productBySku(sku: String!): Product
+        item: Item
     }
 `;
 
@@ -567,5 +598,42 @@ describe('GraphqlMockingService', () => {
     const contextB = subgraphMockingService.createContext(contextA.sequenceId);
 
     expect(contextA.sequenceId === contextB.sequenceId);
+  });
+
+  it('handles explicit mocks of a single type on an interface', async () => {
+    const mockingContext = mockingService.createContext();
+    const operationName = 'itemQuery';
+    await mockingContext.operation(operationName, {
+      data: {
+        item: {
+          __typename: 'ItemOne',
+          id: 'string',
+          someField1: 'string',
+        },
+      },
+    });
+
+    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+      method: 'post',
+      body: JSON.stringify({
+        operationName,
+        query:
+          'query itemQuery { item { __typename id ... on ItemOne { someField1 } ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }} }',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      },
+    }).then((res) => res.json());
+
+    expect(operationResult).toEqual({
+      data: {
+        item: {
+          __typename: 'ItemOne',
+          id: 'string',
+          someField1: 'string',
+        },
+      },
+    });
   });
 });
