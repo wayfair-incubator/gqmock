@@ -1,7 +1,6 @@
 import deepMerge from '../deepMerge';
 import {buildSchema} from 'graphql';
-import SeedManager from "../../seed/SeedManager";
-import ApolloServerManager from "../../ApolloServerManager";
+import ApolloServerManager from '../../ApolloServerManager';
 
 const schemaSource = `
     interface Product {
@@ -571,7 +570,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, schema, apolloServerManager);
+    const mergeResult = await deepMerge(
+      source,
+      seed,
+      schema,
+      apolloServerManager
+    );
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -735,7 +739,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, schema, null,{
+    const mergeResult = await deepMerge(source, seed, null, {
       metaPropertyPrefix: '$_$',
     });
     expect(mergeResult.data).toEqual(expectedResult);
@@ -952,8 +956,8 @@ describe('deepMerge', () => {
           id: 'hello',
           someField1: 'hello',
           nested: {
-            name: 'hello'
-          }
+            name: 'hello',
+          },
         },
       },
     };
@@ -965,8 +969,8 @@ describe('deepMerge', () => {
           id: 'string',
           someField2: 'string',
           nested: {
-            name: 'string'
-          }
+            name: 'string',
+          },
         },
       },
     };
@@ -978,13 +982,13 @@ describe('deepMerge', () => {
           id: 'string',
           someField2: 'string',
           nested: {
-            name: 'string'
-          }
+            name: 'string',
+          },
         },
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, schema, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, apolloServerManager);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });

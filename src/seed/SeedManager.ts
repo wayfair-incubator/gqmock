@@ -8,7 +8,7 @@ import {
 } from './types';
 import GraphqlMockingContextLogger from '../utilities/Logger';
 import {isEqual} from 'lodash';
-import {GraphQLSchema} from 'graphql';
+import ApolloServerManager from '../ApolloServerManager';
 
 export enum SeedType {
   Operation = 'operation',
@@ -182,19 +182,18 @@ export default class SeedManager {
     variables,
     operationMock,
     sequenceId,
-    schema,
-    apolloServerManager
+    apolloServerManager,
   }: {
     operationName: string;
     variables: Record<string, unknown>;
     operationMock: {data: Record<string, unknown>; errors: object[]};
     sequenceId: string;
-    schema: GraphQLSchema | null;
-  }): {
+    apolloServerManager: ApolloServerManager;
+  }): Promise<{
     data: Record<string, unknown>;
     errors?: object[];
     warnings?: string[];
-  } {
+  }> {
     const {seed, seedIndex} = this.findSeed(
       sequenceId,
       operationName,
@@ -211,7 +210,6 @@ export default class SeedManager {
           const seededMock = await deepMerge(
             {data: operationMock.data || null},
             {data: validSeed.operationSeedResponse.data || {}},
-            schema,
             apolloServerManager
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);

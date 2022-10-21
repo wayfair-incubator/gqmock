@@ -1,5 +1,5 @@
 import SeedManager, {SeedType} from '../seed/SeedManager';
-import ApolloServerManager from "../ApolloServerManager";
+import ApolloServerManager from '../ApolloServerManager';
 
 describe('Seed Manager', () => {
   let seedManager;
@@ -227,7 +227,7 @@ describe('Seed Manager', () => {
   });
 
   describe('mergeOperationResponse', function () {
-    it('should not merge anything if seed is not found',  async function () {
+    it('should not merge anything if seed is not found', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -242,7 +242,7 @@ describe('Seed Manager', () => {
           operationMock,
           sequenceId,
           schema: null,
-          apolloServerManager
+          apolloServerManager,
         })
       ).toEqual(operationMock);
     });
@@ -279,7 +279,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
     });
@@ -314,7 +314,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
     });
@@ -342,7 +342,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(mergeResult).toEqual({data: seed.operationSeedResponse});
     });
@@ -396,7 +396,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(firstMergeResult).toEqual(firstSeedExpectedOperationResult);
       const secondMergeResult = await seedManager.mergeOperationResponse({
@@ -405,7 +405,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(secondMergeResult).toEqual(firstSeedExpectedOperationResult);
       // first seed should be discarded now
@@ -415,7 +415,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(thirdMergeResult).toEqual(secondSeedExpectedOperationResult);
       const fourthMergeResult = await seedManager.mergeOperationResponse({
@@ -424,7 +424,7 @@ describe('Seed Manager', () => {
         operationMock,
         sequenceId,
         schema: null,
-        apolloServerManager
+        apolloServerManager,
       });
       expect(fourthMergeResult).toEqual(secondSeedExpectedOperationResult);
     });

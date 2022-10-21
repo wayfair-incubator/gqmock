@@ -1,7 +1,7 @@
 import {ApolloServer} from 'apollo-server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
 import {GraphQLSchema, parse, buildSchema, GraphQLObjectType} from 'graphql';
-import { mergeSchemas } from '@graphql-tools/schema';
+import {mergeSchemas} from '@graphql-tools/schema';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 const IGNORE_TYPES = [
@@ -15,7 +15,7 @@ const IGNORE_TYPES = [
   '__EnumValue',
   '__Directive',
   '__DirectiveLocation',
-]
+];
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
@@ -32,15 +32,18 @@ export default class ApolloServerManager {
     return this.graphQLSchema;
   }
 
-  get privateQueryPrefix() {
+  get privateQueryPrefix(): string {
     return GQMOCK_QUERY_PREFIX;
   }
 
-  createApolloServer(schemaSource: string, options: SchemaRegistrationOptions): void {
+  createApolloServer(
+    schemaSource: string,
+    options: SchemaRegistrationOptions
+  ): void {
     const executableSchema = buildSubgraphSchema(parse(schemaSource));
     const customizedSchema = this.buildCustomizedSchema(executableSchema);
     const mergedSchema = mergeSchemas({
-      schemas: [executableSchema, customizedSchema]
+      schemas: [executableSchema, customizedSchema],
     });
     this.graphQLSchema = mergedSchema;
     if (options.subgraph) {
@@ -52,7 +55,7 @@ export default class ApolloServerManager {
       const executableSchema = buildSchema(schemaSource);
       const customizedSchema = this.buildCustomizedSchema(executableSchema);
       const mergedSchema = mergeSchemas({
-        schemas: [executableSchema, customizedSchema]
+        schemas: [executableSchema, customizedSchema],
       });
       this.graphQLSchema = mergedSchema;
       this.apolloServerInstance = new ApolloServer({
@@ -64,21 +67,24 @@ export default class ApolloServerManager {
     this.graphQLSchema = buildSchema(schemaSource);
   }
 
-  buildCustomizedSchema(executableSchema) {
+  buildCustomizedSchema(executableSchema: GraphQLSchema): GraphQLSchema {
     const typeMap = executableSchema.getTypeMap();
-    const privateTypeQueries = Object.entries(new Object(typeMap)).reduce((fields, [typeName, typeDefinition]) => {
-      if (!IGNORE_TYPES.includes(typeName)) {
-        fields[`${GQMOCK_QUERY_PREFIX}_${typeName}`] = {
-          type: executableSchema?.getType(typeName)
+    const privateTypeQueries = Object.keys(new Object(typeMap)).reduce(
+      (fields, typeName) => {
+        if (!IGNORE_TYPES.includes(typeName)) {
+          fields[`${GQMOCK_QUERY_PREFIX}_${typeName}`] = {
+            type: executableSchema?.getType(typeName),
+          };
         }
-      }
 
-      return fields;
-    }, {});
+        return fields;
+      },
+      {}
+    );
 
     const queryType = new GraphQLObjectType({
       name: 'Query',
-      fields: privateTypeQueries
+      fields: privateTypeQueries,
     });
     return new GraphQLSchema({query: queryType});
   }
