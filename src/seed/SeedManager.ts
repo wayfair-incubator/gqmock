@@ -177,12 +177,13 @@ export default class SeedManager {
     };
   }
 
-  mergeOperationResponse({
+  async mergeOperationResponse({
     operationName,
     variables,
     operationMock,
     sequenceId,
     schema,
+    apolloServerManager
   }: {
     operationName: string;
     variables: Record<string, unknown>;
@@ -207,10 +208,11 @@ export default class SeedManager {
             validSeed.operationSeedResponse.errors ||
             operationMock.errors ||
             [];
-          const seededMock = deepMerge(
+          const seededMock = await deepMerge(
             {data: operationMock.data || null},
             {data: validSeed.operationSeedResponse.data || {}},
-            schema
+            schema,
+            apolloServerManager
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
           return {

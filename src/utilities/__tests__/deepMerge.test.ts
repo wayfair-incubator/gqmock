@@ -1,5 +1,7 @@
 import deepMerge from '../deepMerge';
 import {buildSchema} from 'graphql';
+import SeedManager from "../../seed/SeedManager";
+import ApolloServerManager from "../../ApolloServerManager";
 
 const schemaSource = `
     interface Product {
@@ -54,7 +56,13 @@ const schemaSource = `
 const schema = buildSchema(schemaSource);
 
 describe('deepMerge', () => {
-  it('should merge source with a partially defined object', function () {
+  let apolloServerManager;
+  beforeAll(() => {
+    apolloServerManager = new ApolloServerManager();
+    apolloServerManager.createApolloServer(schemaSource, {});
+  });
+
+  it('should merge source with a partially defined object', async function () {
     const source = {
       data: {
         product: {
@@ -93,12 +101,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge source with a fully defined object', function () {
+  it('should merge source with a fully defined object', async function () {
     const source = {
       data: {
         product: {
@@ -129,12 +137,12 @@ describe('deepMerge', () => {
 
     const expectedResult = seed;
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should return merged data with warnings if any fields are skipped', function () {
+  it('should return merged data with warnings if any fields are skipped', async function () {
     // seed defines fields not present in source
     const source = {
       data: {
@@ -183,7 +191,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(2);
     expect(mergeResult.warnings).toContain(
@@ -194,7 +202,7 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should merge data with falsy values in source', function () {
+  it('should merge data with falsy values in source', async function () {
     const source = {
       data: {
         item: {
@@ -219,12 +227,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge arrays using longhand notation', function () {
+  it('should merge arrays using longhand notation', async function () {
     const source = {
       data: {
         product: {
@@ -272,12 +280,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge arrays using shorthand notation', function () {
+  it('should merge arrays using shorthand notation', async function () {
     const source = {
       data: {
         product: {
@@ -325,12 +333,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge nested arrays using longhand notation', function () {
+  it('should merge nested arrays using longhand notation', async function () {
     const source = {
       data: {
         product: {
@@ -446,12 +454,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge nested arrays using shorthand notation', function () {
+  it('should merge nested arrays using shorthand notation', async function () {
     const source = {
       data: {
         product: {
@@ -563,12 +571,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema, apolloServerManager);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow overrides of specific array items using longhand notation', function () {
+  it('should allow overrides of specific array items using longhand notation', async function () {
     const source = {
       data: {
         product: {
@@ -616,12 +624,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow overrides of specific array items using shorthand notation', function () {
+  it('should allow overrides of specific array items using shorthand notation', async function () {
     const source = {
       data: {
         product: {
@@ -673,12 +681,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow custom meta prefix', function () {
+  it('should allow custom meta prefix', async function () {
     // $ is the meta prefix by default
     const source = {
       data: {
@@ -727,14 +735,14 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema, {
+    const mergeResult = await deepMerge(source, seed, schema, null,{
       metaPropertyPrefix: '$_$',
     });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should not merge value if seed defines an array but source does not', function () {
+  it('should not merge value if seed defines an array but source does not', async function () {
     //array type mismatch
     const source = {
       data: {
@@ -767,7 +775,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -775,7 +783,7 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should return warnings if seed defines extra fields inside arrays', function () {
+  it('should return warnings if seed defines extra fields inside arrays', async function () {
     const source = {
       data: {
         product: {
@@ -823,7 +831,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -831,7 +839,7 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should handle empty arrays in seed', function () {
+  it('should handle empty arrays in seed', async function () {
     const source = {
       data: {
         product: {
@@ -866,12 +874,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should handle arrays with primitive values', function () {
+  it('should handle arrays with primitive values', async function () {
     const source = {
       data: {
         product: {
@@ -899,12 +907,12 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should handle null values in mock correctly', function () {
+  it('should handle null values in mock correctly', async function () {
     const source = {
       data: {
         product: null,
@@ -931,18 +939,21 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge data that matches valid type in interface', function () {
+  it('should merge data that matches valid type in interface', async function () {
     const source = {
       data: {
         item: {
           __typename: 'ItemOne',
-          id: 'string',
-          someField1: 'string',
+          id: 'hello',
+          someField1: 'hello',
+          nested: {
+            name: 'hello'
+          }
         },
       },
     };
@@ -953,6 +964,9 @@ describe('deepMerge', () => {
           __typename: 'ItemTwo',
           id: 'string',
           someField2: 'string',
+          nested: {
+            name: 'string'
+          }
         },
       },
     };
@@ -963,11 +977,14 @@ describe('deepMerge', () => {
           __typename: 'ItemTwo',
           id: 'string',
           someField2: 'string',
+          nested: {
+            name: 'string'
+          }
         },
       },
     };
 
-    const mergeResult = deepMerge(source, seed, schema);
+    const mergeResult = await deepMerge(source, seed, schema, apolloServerManager);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });

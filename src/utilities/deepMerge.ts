@@ -1,7 +1,8 @@
 import cloneDeep from 'lodash/cloneDeep';
+import async from 'async';
 import escapeStringRegexp from 'escape-string-regexp';
 import {GraphQLSchema} from 'graphql';
-import {doesFieldExistOnType, getFieldsOnType} from './validate';
+import { Headers } from "apollo-server-env";
 
 /**
  * Append key to a path
@@ -51,10 +52,11 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {string} root0.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
  * @returns {object} A merged object and a list of warnings
  */
-function merge(
+async function merge(
   source,
   target,
   schema: GraphQLSchema | null,
+  apolloServerManager,
   {
     rollingKey = '',
     warnings = new Set(),
@@ -68,27 +70,62 @@ function merge(
   data: Record<string, unknown>;
   warnings: Set<string>;
 } {
-  const hasSourceAndTargetTypeMismatch =
-    typeof target.__typename === 'string' &&
-    source.__typename !== target.__typename &&
-    schema !== null;
+  if (source.__typename && target.__typename && source.__typename !== target.__typename) {
+    // typename mismatch detected
+    // fetch a mock with the correct type
+    const type = apolloServerManager.schema.getType(target.__typename);
+    const fieldNames = type.astNode.fields.map(field => field.name.value);
+    const typeName = `${apolloServerManager.privateQueryPrefix}_${target.__typename}`;
+    const query = `query privateQuery {
+      ${typeName} {
+        ${fieldNames.join('\n')}
+      }
+    }`;
 
-  Object.entries(target).forEach(([targetKey, targetValue]) => {
+    const queryResult = await apolloServerManager.apolloServer.executeOperation({
+      query,
+      variables: {},
+      operationName: 'privateQuery',
+      http: {
+        url: '',
+        method: '',
+        headers: new Headers(),
+      },
+    });
+
+    // merge the new mock into target to derive a new source object with proper nesting
+    const modifiedSource = (await merge(cloneDeep(target), queryResult.data[typeName], schema, apolloServerManager, {
+      rollingKey,
+      warnings: new Set(),
+      metaPropertyPrefix,
+    })).data;
+
+    // assign new values and delete old keys
+    // note: cannot do source = modifiedSource because object references get broken and target ends up pointing to the wrong object
+    Object.assign(source, modifiedSource);
+    Object.keys(source).forEach(key => {
+      if (!modifiedSource.hasOwnProperty(key)) {
+        delete source[key];
+      }
+    });
+  }
+
+  await async.eachLimit(Object.entries(target), 1,  async ([targetKey, targetValue]) => {
     const newRollingKey = buildRollingKey(rollingKey, targetKey);
     if (source[targetKey]) {
       if (
         targetValue instanceof Object &&
         Number.isInteger(targetValue[`${metaPropertyPrefix}length`])
       ) {
-        source[targetKey] = [
+        source[targetKey] = await async.mapLimit([
           ...Array(targetValue[`${metaPropertyPrefix}length`]).keys(),
-        ].map(() => {
+        ], 1, async () => {
           return cloneDeep(
-            merge(source[targetKey][0], targetValue, schema, {
+            (await merge(source[targetKey][0], targetValue, schema, apolloServerManager,{
               rollingKey: newRollingKey,
               warnings,
               metaPropertyPrefix,
-            }).data
+            })).data
           );
         });
 
@@ -96,36 +133,37 @@ function merge(
           targetValue,
           metaPropertyPrefix
         );
-        Object.entries(shorthandOverrides).forEach(([index, overrideValue]) => {
+        await async.eachLimit(Object.entries(shorthandOverrides), 1, async ([index, overrideValue]) => {
           source[targetKey][index] = cloneDeep(
-            merge(source[targetKey][index], overrideValue, schema, {
+            (await merge(source[targetKey][index], overrideValue, schema, apolloServerManager, {
               rollingKey: newRollingKey,
               warnings,
               metaPropertyPrefix,
-            }).data
+            })).data
           );
         });
       } else if (Array.isArray(targetValue)) {
         const lastTargetArrayItem = targetValue[targetValue.length - 1];
         const sourceItem = source[targetKey][0];
         if (Array.isArray(source[targetKey])) {
-          source[targetKey] = targetValue.map((item) => {
+          source[targetKey] = await async.mapLimit(targetValue, 1, async (item) => {
             if (lastTargetArrayItem instanceof Object) {
               if (Object.entries(item).length) {
                 return cloneDeep(
-                  merge(sourceItem, item, schema, {
+                  (await merge(sourceItem, item, schema, apolloServerManager,{
                     rollingKey: newRollingKey,
                     warnings,
                     metaPropertyPrefix,
-                  }).data
+                  })).data
                 );
               }
+
               return cloneDeep(
-                merge(sourceItem, lastTargetArrayItem, schema, {
+                (await merge(sourceItem, lastTargetArrayItem, schema, apolloServerManager,{
                   rollingKey: newRollingKey,
                   warnings,
                   metaPropertyPrefix,
-                }).data
+                })).data
               );
             }
 
@@ -137,7 +175,7 @@ function merge(
           );
         }
       } else if (targetValue instanceof Object) {
-        return merge(source[targetKey], targetValue, schema, {
+        return merge(source[targetKey], targetValue, schema, apolloServerManager,{
           rollingKey: newRollingKey,
           warnings,
           metaPropertyPrefix,
@@ -152,15 +190,6 @@ function merge(
       source[targetKey] === ''
     ) {
       source[targetKey] = targetValue;
-    } else if (
-      hasSourceAndTargetTypeMismatch &&
-      doesFieldExistOnType({
-        field: targetKey,
-        type: target.__typename,
-        schema,
-      })
-    ) {
-      source[targetKey] = targetValue;
     } else {
       if (targetKey.indexOf(metaPropertyPrefix) === 0) {
         //ignore shorthand meta properties
@@ -169,22 +198,6 @@ function merge(
       }
     }
   });
-
-  if (hasSourceAndTargetTypeMismatch) {
-    const validFieldsForType = getFieldsOnType({
-      type: target.__typename,
-      schema,
-    });
-
-    Object.keys(source).forEach((sourceKey) => {
-      if (
-        sourceKey !== '__typename' &&
-        !validFieldsForType.includes(sourceKey)
-      ) {
-        delete source[sourceKey];
-      }
-    });
-  }
 
   return {
     data: source,
@@ -201,16 +214,17 @@ function merge(
  * @param {object} options - Merge options
  * @returns {object} A merged object and a list of warnings
  */
-function deepMerge(
+async function deepMerge(
   source: Record<string, unknown>,
   seed: Record<string, unknown>,
   schema: GraphQLSchema | null,
+  apolloServerManager,
   options = {}
 ): {
   data: Record<string, unknown>;
   warnings: string[];
 } {
-  const {data, warnings} = merge(cloneDeep(source), seed, schema, options);
+  const {data, warnings} = await merge(cloneDeep(source), seed, schema, apolloServerManager, options);
   return {
     data,
     warnings: Array.from(warnings),

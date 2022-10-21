@@ -1,6 +1,21 @@
-import {ApolloServer, gql} from 'apollo-server';
+import {ApolloServer} from 'apollo-server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
-import {GraphQLSchema, parse, buildSchema} from 'graphql';
+import {GraphQLSchema, parse, buildSchema, GraphQLObjectType} from 'graphql';
+import { mergeSchemas } from '@graphql-tools/schema';
+
+const GQMOCK_QUERY_PREFIX = 'gqmock';
+const IGNORE_TYPES = [
+  'Query',
+  'Boolean',
+  '__Schema',
+  '__Type',
+  '__TypeKind',
+  '__Field',
+  '__InputValue',
+  '__EnumValue',
+  '__Directive',
+  '__DirectiveLocation',
+]
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
@@ -17,21 +32,54 @@ export default class ApolloServerManager {
     return this.graphQLSchema;
   }
 
-  createApolloServer(schema: string, options: SchemaRegistrationOptions): void {
+  get privateQueryPrefix() {
+    return GQMOCK_QUERY_PREFIX;
+  }
+
+  createApolloServer(schemaSource: string, options: SchemaRegistrationOptions): void {
+    const executableSchema = buildSubgraphSchema(parse(schemaSource));
+    const customizedSchema = this.buildCustomizedSchema(executableSchema);
+    const mergedSchema = mergeSchemas({
+      schemas: [executableSchema, customizedSchema]
+    });
+    this.graphQLSchema = mergedSchema;
     if (options.subgraph) {
       this.apolloServerInstance = new ApolloServer({
-        typeDefs: buildSubgraphSchema(parse(schema)),
+        typeDefs: mergedSchema,
         mocks: true,
       });
     } else {
+      const executableSchema = buildSchema(schemaSource);
+      const customizedSchema = this.buildCustomizedSchema(executableSchema);
+      const mergedSchema = mergeSchemas({
+        schemas: [executableSchema, customizedSchema]
+      });
+      this.graphQLSchema = mergedSchema;
       this.apolloServerInstance = new ApolloServer({
-        typeDefs: gql`
-          ${schema}
-        `,
+        typeDefs: mergedSchema,
         mocks: true,
       });
     }
 
-    this.graphQLSchema = buildSchema(schema);
+    this.graphQLSchema = buildSchema(schemaSource);
+  }
+
+  buildCustomizedSchema(executableSchema) {
+    const typeMap = executableSchema.getTypeMap();
+    const privateTypeQueries = Object.entries(new Object(typeMap)).reduce((fields, [typeName, typeDefinition]) => {
+      if (!IGNORE_TYPES.includes(typeName)) {
+        fields[`${GQMOCK_QUERY_PREFIX}_${typeName}`] = {
+          type: executableSchema?.getType(typeName)
+        }
+      }
+
+      return fields;
+    }, {});
+
+    const queryType = new GraphQLObjectType({
+      name: 'Query',
+      fields: privateTypeQueries
+    });
+    return new GraphQLSchema({query: queryType});
   }
 }

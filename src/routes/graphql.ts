@@ -67,12 +67,13 @@ const graphqlRoutes = (
       return;
     }
 
-    const seededQueryResult = seedManager.mergeOperationResponse({
+    const seededQueryResult = await seedManager.mergeOperationResponse({
       operationName,
       variables,
       operationMock: operationResult,
       sequenceId,
       schema: apolloServerManager.schema,
+      apolloServerManager
     });
 
     seededQueryResult.warnings?.forEach((warning) => {
