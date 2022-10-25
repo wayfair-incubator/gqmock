@@ -241,7 +241,6 @@ describe('Seed Manager', () => {
           variables: {},
           operationMock,
           sequenceId,
-          schema: null,
           apolloServerManager,
         })
       ).toEqual(operationMock);
@@ -278,7 +277,6 @@ describe('Seed Manager', () => {
         variables: seed.operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
@@ -313,7 +311,6 @@ describe('Seed Manager', () => {
         variables: seed.operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
@@ -395,7 +392,6 @@ describe('Seed Manager', () => {
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(firstMergeResult).toEqual(firstSeedExpectedOperationResult);
@@ -404,7 +400,6 @@ describe('Seed Manager', () => {
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(secondMergeResult).toEqual(firstSeedExpectedOperationResult);
@@ -414,7 +409,6 @@ describe('Seed Manager', () => {
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(thirdMergeResult).toEqual(secondSeedExpectedOperationResult);
@@ -423,7 +417,6 @@ describe('Seed Manager', () => {
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
-        schema: null,
         apolloServerManager,
       });
       expect(fourthMergeResult).toEqual(secondSeedExpectedOperationResult);
