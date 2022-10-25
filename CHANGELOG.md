@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.3.0] - 2022-10-25
+
+### Fixed
+
+- Handle GraphQL interfaces and unions
+
 ## [v0.2.4] - 2022-10-17
 
 ### Fixed
