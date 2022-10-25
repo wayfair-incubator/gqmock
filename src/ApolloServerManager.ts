@@ -34,7 +34,7 @@ export default class ApolloServerManager {
     schemaSource: string,
     options: SchemaRegistrationOptions
   ): void {
-    const augmentedSchemaSource = this.buildCustomizedSchema(schemaSource);
+    const augmentedSchemaSource = this.getAugmentedSchema(schemaSource);
     if (options.subgraph) {
       this.graphQLSchema = buildSubgraphSchema(parse(augmentedSchemaSource));
       this.apolloServerInstance = new ApolloServer({
@@ -64,7 +64,7 @@ export default class ApolloServerManager {
     `;
   }
 
-  buildCustomizedSchema(schemaSource: string): string {
+  getAugmentedSchema(schemaSource: string): string {
     const newFields = new Set();
     let queryType;
 
