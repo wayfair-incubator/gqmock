@@ -6,6 +6,59 @@ import {Headers} from 'apollo-server-env';
 import ApolloServerManager from '../ApolloServerManager';
 
 /**
+ * Builds a query for one of the private queries added to the schema
+ *
+ * @param {string} __typename - GraphQL type
+ * @param {object} apolloServerManager - ApolloServerManager instance with access to schema and apollo server
+ * @returns {string} GraphQL query
+ */
+function buildPrivateQuery(__typename, apolloServerManager) {
+  const type = apolloServerManager.schema?.getType(
+    __typename
+  ) as GraphQLObjectType;
+  if (!type) {
+    throw new Error(`Type ${__typename} not found in schema`);
+  }
+
+  const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
+  const typeName = `${apolloServerManager.privateQueryPrefix}_${__typename}`;
+  return {
+    query: `query ${apolloServerManager.privateQueryPrefix}_privateQuery {
+      ${typeName} {
+        ${fieldNames?.join('\n')}
+      }
+    }`,
+    typeName,
+  };
+}
+
+/**
+ * Returns a mock with the correct type in case of a __typename mismatch between mock and seed
+ *
+ * @param {object} target - seed at a given path
+ * @param {object} apolloServerManager - ApolloServerManager instance with access to schema and apollo server
+ * @returns {object} Apollo Server mock
+ */
+async function getNewMock(target, apolloServerManager) {
+  const {query, typeName} = buildPrivateQuery(
+    target.__typename,
+    apolloServerManager
+  );
+  const queryResult = await apolloServerManager.apolloServer?.executeOperation({
+    query,
+    variables: {},
+    operationName: `${apolloServerManager.privateQueryPrefix}_privateQuery`,
+    http: {
+      url: '',
+      method: '',
+      headers: new Headers(),
+    },
+  });
+
+  return queryResult?.data ? queryResult.data[typeName] : {};
+}
+
+/**
  * Append key to a path
  *
  * @param {string} currentKey - A dot separated object key path
@@ -73,40 +126,10 @@ async function merge(
   if (
     source.__typename &&
     target.__typename &&
-    source.__typename !== target.__typename &&
-    apolloServerManager
+    source?.__typename !== target?.__typename
   ) {
-    // typename mismatch detected
-    // fetch a mock with the correct type
-    const type = apolloServerManager.schema?.getType(
-      target.__typename
-    ) as GraphQLObjectType;
-    if (!type) {
-      throw new Error(`Type ${target.__typename} not found in schema`);
-    }
-
-    const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
-    const typeName = `${apolloServerManager.privateQueryPrefix}_${target.__typename}`;
-    const query = `query privateQuery {
-      ${typeName} {
-        ${fieldNames?.join('\n')}
-      }
-    }`;
-
-    const queryResult =
-      await apolloServerManager.apolloServer?.executeOperation({
-        query,
-        variables: {},
-        operationName: 'privateQuery',
-        http: {
-          url: '',
-          method: '',
-          headers: new Headers(),
-        },
-      });
-
     // merge the new mock into target to derive a new source object with proper nesting
-    const newMock = queryResult?.data ? queryResult.data[typeName] : {};
+    const newMock = await getNewMock(target, apolloServerManager);
     const modifiedSource = (
       await merge(cloneDeep(target), newMock, apolloServerManager, {
         rollingKey,

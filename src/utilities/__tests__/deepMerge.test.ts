@@ -1,5 +1,4 @@
 import deepMerge from '../deepMerge';
-import {buildSchema} from 'graphql';
 import ApolloServerManager from '../../ApolloServerManager';
 
 const schemaSource = `
@@ -16,19 +15,42 @@ const schemaSource = `
         id: String
     }
     
+    interface SubItem {
+        id: String
+    }
+    
+    type SubItemOne implements SubItem {
+        id: String
+        field1: String
+        product: ConcreteProduct
+    }
+    
+    type SubItemTwo implements SubItem {
+        id: String
+        field2: String
+    }
+    
+    type SubItemThree implements SubItem {
+        id: String
+        field3: String
+    }
+    
     type ItemOne implements Item {
         id: String
         someField1: String
+        subItem1: SubItem
     }
     
     type ItemTwo implements Item {
         id: String
         someField2: String
+        subItem2: SubItem
     }
     
     type ItemThree implements Item {
         id: String
         someField3: String
+        subItem3: SubItem
     }
     
     type ItemFour implements Item {
@@ -51,8 +73,6 @@ const schemaSource = `
         TWO
     }
 `;
-
-const schema = buildSchema(schemaSource);
 
 describe('deepMerge', () => {
   let apolloServerManager;
@@ -570,12 +590,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(
-      source,
-      seed,
-      schema,
-      apolloServerManager
-    );
+    const mergeResult = await deepMerge(source, seed, apolloServerManager);
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -952,11 +967,13 @@ describe('deepMerge', () => {
     const source = {
       data: {
         item: {
-          __typename: 'ItemOne',
+          __typename: 'ItemTwo',
           id: 'hello',
-          someField1: 'hello',
-          nested: {
-            name: 'hello',
+          someField2: 'hello',
+          subItem2: {
+            __typename: 'SubItemTwo',
+            id: 'hello',
+            field2: 'hello',
           },
         },
       },
@@ -965,11 +982,17 @@ describe('deepMerge', () => {
     const seed = {
       data: {
         item: {
-          __typename: 'ItemTwo',
+          __typename: 'ItemOne',
           id: 'string',
-          someField2: 'string',
-          nested: {
-            name: 'string',
+          someField1: 'string',
+          subItem1: {
+            __typename: 'SubItemOne',
+            id: 'string',
+            field1: 'string',
+            product: {
+              type: 'productType',
+              name: 'productName',
+            },
           },
         },
       },
@@ -978,11 +1001,17 @@ describe('deepMerge', () => {
     const expectedResult = {
       data: {
         item: {
-          __typename: 'ItemTwo',
+          __typename: 'ItemOne',
           id: 'string',
-          someField2: 'string',
-          nested: {
-            name: 'string',
+          someField1: 'string',
+          subItem1: {
+            __typename: 'SubItemOne',
+            id: 'string',
+            field1: 'string',
+            product: {
+              type: 'productType',
+              name: 'productName',
+            },
           },
         },
       },
