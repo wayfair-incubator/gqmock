@@ -1,9 +1,12 @@
 import SeedManager, {SeedType} from '../seed/SeedManager';
+import ApolloServerManager from '../ApolloServerManager';
 
 describe('Seed Manager', () => {
   let seedManager;
+  let apolloServerManager;
   beforeEach(() => {
     seedManager = new SeedManager();
+    apolloServerManager = new ApolloServerManager();
   });
 
   describe('validateSequenceId', function () {
@@ -224,7 +227,7 @@ describe('Seed Manager', () => {
   });
 
   describe('mergeOperationResponse', function () {
-    it('should not merge anything if seed is not found', function () {
+    it('should not merge anything if seed is not found', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -233,16 +236,17 @@ describe('Seed Manager', () => {
       };
 
       expect(
-        seedManager.mergeOperationResponse({
+        await seedManager.mergeOperationResponse({
           operationName: 'operationA',
           variables: {},
           operationMock,
           sequenceId,
+          apolloServerManager,
         })
       ).toEqual(operationMock);
     });
 
-    it('should merge operation response with operation type seeds', function () {
+    it('should merge operation response with operation type seeds', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -268,16 +272,17 @@ describe('Seed Manager', () => {
       const type = SeedType.Operation;
 
       seedManager.registerSeed(sequenceId, type, seed);
-      const mergeResult = seedManager.mergeOperationResponse({
+      const mergeResult = await seedManager.mergeOperationResponse({
         operationName: seed.operationName,
         variables: seed.operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
     });
 
-    it('should prioritize seed errors over mock errors', function () {
+    it('should prioritize seed errors over mock errors', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         errors: [
@@ -301,16 +306,17 @@ describe('Seed Manager', () => {
       const type = SeedType.Operation;
 
       seedManager.registerSeed(sequenceId, type, seed);
-      const mergeResult = seedManager.mergeOperationResponse({
+      const mergeResult = await seedManager.mergeOperationResponse({
         operationName: seed.operationName,
         variables: seed.operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(mergeResult).toEqual(expectedOperationResult);
     });
 
-    it('should merge operation response with network-error type seeds', function () {
+    it('should merge operation response with network-error type seeds', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         errors: [
@@ -327,16 +333,18 @@ describe('Seed Manager', () => {
       const type = SeedType.NetworkError;
 
       seedManager.registerSeed(sequenceId, type, seed);
-      const mergeResult = seedManager.mergeOperationResponse({
+      const mergeResult = await seedManager.mergeOperationResponse({
         operationName: seed.operationName,
         variables: seed.operationMatchArguments,
         operationMock,
         sequenceId,
+        schema: null,
+        apolloServerManager,
       });
       expect(mergeResult).toEqual({data: seed.operationSeedResponse});
     });
 
-    it('should discard seeds after being used the number of times provided at registration', function () {
+    it('should discard seeds after being used the number of times provided at registration', async function () {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -379,33 +387,37 @@ describe('Seed Manager', () => {
       seedManager.registerSeed(sequenceId, type, firstSeed, {usesLeft: 2});
       seedManager.registerSeed(sequenceId, type, secondSeed);
 
-      const firstMergeResult = seedManager.mergeOperationResponse({
+      const firstMergeResult = await seedManager.mergeOperationResponse({
         operationName,
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(firstMergeResult).toEqual(firstSeedExpectedOperationResult);
-      const secondMergeResult = seedManager.mergeOperationResponse({
+      const secondMergeResult = await seedManager.mergeOperationResponse({
         operationName,
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(secondMergeResult).toEqual(firstSeedExpectedOperationResult);
       // first seed should be discarded now
-      const thirdMergeResult = seedManager.mergeOperationResponse({
+      const thirdMergeResult = await seedManager.mergeOperationResponse({
         operationName,
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(thirdMergeResult).toEqual(secondSeedExpectedOperationResult);
-      const fourthMergeResult = seedManager.mergeOperationResponse({
+      const fourthMergeResult = await seedManager.mergeOperationResponse({
         operationName,
         variables: operationMatchArguments,
         operationMock,
         sequenceId,
+        apolloServerManager,
       });
       expect(fourthMergeResult).toEqual(secondSeedExpectedOperationResult);
     });

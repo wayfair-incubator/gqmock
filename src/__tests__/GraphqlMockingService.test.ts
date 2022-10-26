@@ -29,10 +29,72 @@ const schema = `
         dimensions: Dimensions
     }
     
+    interface SomeProduct {
+        name: String
+    }
+    
+    type ConcreteProduct implements SomeProduct {
+        name: String
+        type: String
+    }
+    
+    interface SubItem {
+        id: String
+    }
+    
+    type SubItemOne implements SubItem {
+        id: String
+        field1: String
+        product: ConcreteProduct
+    }
+    
+    type SubItemTwo implements SubItem {
+        id: String
+        field2: String
+    }
+    
+    type SubItemThree implements SubItem {
+        id: String
+        field3: String
+    }
+    
+    interface Item {
+        id: String
+    }
+    
+    type ItemOne implements Item {
+        id: String
+        someField1: String
+        subItem1: SubItem
+    }
+    
+    type ItemTwo implements Item {
+        id: String
+        someField2: String
+        subItem2: SubItem
+    }
+    
+    type ItemThree implements Item {
+        id: String
+        someField3: String
+        subItem3: SubItem
+    }
+    
+    type ItemFour implements Item {
+        id: String
+        someField4: String
+    }
+    
+    type ItemFive implements Item {
+        id: String
+        someField5: String
+    }
+    
     type Query {
         products: [Product]
         productByName(name: String!): Product
         productBySku(sku: String!): Product
+        item: Item
     }
 `;
 
@@ -567,5 +629,60 @@ describe('GraphqlMockingService', () => {
     const contextB = subgraphMockingService.createContext(contextA.sequenceId);
 
     expect(contextA.sequenceId === contextB.sequenceId);
+  });
+
+  it('handles explicit mocks of a single type on an interface', async () => {
+    const mockingContext = mockingService.createContext();
+    const operationName = 'itemQuery';
+    await mockingContext.operation(operationName, {
+      data: {
+        item: {
+          __typename: 'ItemOne',
+          id: 'string',
+          someField1: 'string',
+          subItem1: {
+            __typename: 'SubItemOne',
+            id: 'string',
+            field1: 'string',
+            product: {
+              type: 'productType',
+              name: 'productName',
+            },
+          },
+        },
+      },
+    });
+
+    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+      method: 'post',
+      body: JSON.stringify({
+        operationName,
+        query:
+          'query itemQuery { item { __typename id ... on ItemOne { someField1 subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}}',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      },
+    }).then((res) => res.json());
+
+    expect(operationResult).toEqual({
+      data: {
+        item: {
+          __typename: 'ItemOne',
+          id: 'string',
+          someField1: 'string',
+          subItem1: {
+            __typename: 'SubItemOne',
+            id: 'string',
+            field1: 'string',
+            product: {
+              type: 'productType',
+              name: 'productName',
+            },
+          },
+        },
+      },
+    });
   });
 });

@@ -17,7 +17,6 @@ const graphqlRoutes = (
   router.post('/', async (req, res) => {
     const {query = '', variables = {}, operationName} = req.body;
     const sequenceId = req.headers['mocking-sequence-id'] as string;
-
     if (!operationName) {
       res.status(400);
       res.json({
@@ -67,11 +66,12 @@ const graphqlRoutes = (
       return;
     }
 
-    const seededQueryResult = seedManager.mergeOperationResponse({
+    const seededQueryResult = await seedManager.mergeOperationResponse({
       operationName,
       variables,
       operationMock: operationResult,
       sequenceId,
+      apolloServerManager,
     });
 
     seededQueryResult.warnings?.forEach((warning) => {
