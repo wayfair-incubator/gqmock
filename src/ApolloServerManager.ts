@@ -3,13 +3,15 @@ import {buildSubgraphSchema} from '@apollo/subgraph';
 import {
   GraphQLSchema,
   parse,
-  buildSchema,
   visit,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
   GraphQLObjectType,
+  Kind,
+  buildASTSchema,
 } from 'graphql';
 import {Headers} from 'apollo-server-env';
+import {DocumentNode} from 'graphql/language/ast';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -36,11 +38,11 @@ export default class ApolloServerManager {
     schemaSource: string,
     options: SchemaRegistrationOptions
   ): void {
-    const augmentedSchemaSource = this.getAugmentedSchema(schemaSource);
+    const augmentedSchemaAst = this.getAugmentedSchema(schemaSource);
     if (options.subgraph) {
-      this.graphQLSchema = buildSubgraphSchema(parse(augmentedSchemaSource));
+      this.graphQLSchema = buildSubgraphSchema(augmentedSchemaAst);
     } else {
-      this.graphQLSchema = buildSchema(augmentedSchemaSource);
+      this.graphQLSchema = buildASTSchema(augmentedSchemaAst);
     }
 
     this.apolloServerInstance = new ApolloServer({
@@ -49,21 +51,7 @@ export default class ApolloServerManager {
     });
   }
 
-  private addQueryFields(newFields, schemaSource) {
-    return `
-      ${schemaSource}
-      
-      extend type Query {
-        ${newFields
-          .map(
-            (fieldName) => `${GQMOCK_QUERY_PREFIX}_${fieldName}: ${fieldName}`
-          )
-          .join('\n')}
-      }
-    `;
-  }
-
-  private getAugmentedSchema(schemaSource: string): string {
+  private getAugmentedSchema(schemaSource: string): DocumentNode {
     const newFields = new Set();
     let queryType;
 
@@ -78,12 +66,30 @@ export default class ApolloServerManager {
       return node;
     };
 
-    visit(parse(schemaSource), {
+    const newAst = visit(parse(schemaSource), {
       ObjectTypeDefinition: extractTypes,
       ObjectTypeExtension: extractTypes,
     });
 
-    return this.addQueryFields(Array.from(newFields), schemaSource);
+    queryType.fields = [
+      ...queryType.fields,
+      ...Array.from(newFields).map((typeName) => ({
+        kind: Kind.FIELD_DEFINITION,
+        name: {
+          kind: Kind.NAME,
+          value: this.getFieldName(typeName as string),
+        },
+        type: {
+          kind: Kind.NAMED_TYPE,
+          name: {
+            kind: Kind.NAME,
+            value: typeName,
+          },
+        },
+      })),
+    ];
+
+    return newAst;
   }
 
   getFieldName(__typename: string): string {
