@@ -7,7 +7,9 @@ import {
   visit,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
+  GraphQLObjectType,
 } from 'graphql';
+import {Headers} from 'apollo-server-env';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -37,17 +39,14 @@ export default class ApolloServerManager {
     const augmentedSchemaSource = this.getAugmentedSchema(schemaSource);
     if (options.subgraph) {
       this.graphQLSchema = buildSubgraphSchema(parse(augmentedSchemaSource));
-      this.apolloServerInstance = new ApolloServer({
-        typeDefs: this.graphQLSchema,
-        mocks: true,
-      });
     } else {
-      this.graphQLSchema = buildSchema(schemaSource);
-      this.apolloServerInstance = new ApolloServer({
-        typeDefs: this.graphQLSchema,
-        mocks: true,
-      });
+      this.graphQLSchema = buildSchema(augmentedSchemaSource);
     }
+
+    this.apolloServerInstance = new ApolloServer({
+      typeDefs: this.graphQLSchema,
+      mocks: true,
+    });
   }
 
   private addQueryFields(newFields, schemaSource) {
@@ -64,7 +63,7 @@ export default class ApolloServerManager {
     `;
   }
 
-  getAugmentedSchema(schemaSource: string): string {
+  private getAugmentedSchema(schemaSource: string): string {
     const newFields = new Set();
     let queryType;
 
@@ -85,5 +84,50 @@ export default class ApolloServerManager {
     });
 
     return this.addQueryFields(Array.from(newFields), schemaSource);
+  }
+
+  getFieldName(__typename: string): string {
+    return `${this.privateQueryPrefix}_${__typename}`;
+  }
+
+  buildPrivateQuery(__typename: string): {
+    query: string;
+    typeName: string;
+  } {
+    const type = this.graphQLSchema?.getType(__typename) as GraphQLObjectType;
+    if (!type) {
+      throw new Error(`Type ${__typename} not found in schema`);
+    }
+
+    const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
+    const typeName = this.getFieldName(__typename);
+    return {
+      query: `query ${this.getFieldName('privateQuery')} {
+      ${typeName} {
+        ${fieldNames?.join('\n')}
+      }
+    }`,
+      typeName,
+    };
+  }
+
+  async getNewMock(
+    target: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const {query, typeName} = this.buildPrivateQuery(
+      target.__typename as string
+    );
+    const queryResult = await this.apolloServer?.executeOperation({
+      query,
+      variables: {},
+      operationName: `${this.privateQueryPrefix}_privateQuery`,
+      http: {
+        url: '',
+        method: '',
+        headers: new Headers(),
+      },
+    });
+
+    return queryResult?.data ? queryResult.data[typeName] : {};
   }
 }
