@@ -12,6 +12,7 @@ import {
 } from 'graphql';
 import {Headers} from 'apollo-server-env';
 import {DocumentNode} from 'graphql/language/ast';
+import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -117,7 +118,7 @@ export default class ApolloServerManager {
     };
   }
 
-  async getNewMock(
+  async getNewMock2(
     target: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     const {query, typeName} = this.buildPrivateQuery(
@@ -126,7 +127,7 @@ export default class ApolloServerManager {
     const queryResult = await this.apolloServer?.executeOperation({
       query,
       variables: {},
-      operationName: `${this.privateQueryPrefix}_privateQuery`,
+      operationName: this.getFieldName('privateQuery'),
       http: {
         url: '',
         method: '',
@@ -135,5 +136,39 @@ export default class ApolloServerManager {
     });
 
     return queryResult?.data ? queryResult.data[typeName] : {};
+  }
+
+  async getNewMock({
+    query,
+    typeName,
+    operationName,
+    rollingKey,
+  }: {
+    query: string;
+    typeName: string;
+    operationName: string;
+    rollingKey: string;
+  }): Promise<Record<string, unknown>> {
+    const newQuery = buildUnionTypeQuery({
+      query,
+      typeName,
+      operationName,
+      rollingKey,
+      apolloServerManager: this,
+    });
+    const queryResult = await this.apolloServer?.executeOperation({
+      query: newQuery,
+      variables: {},
+      operationName: this.getFieldName('privateQuery'),
+      http: {
+        url: '',
+        method: '',
+        headers: new Headers(),
+      },
+    });
+
+    return queryResult?.data
+      ? {...queryResult.data[this.getFieldName(typeName)]}
+      : {};
   }
 }
