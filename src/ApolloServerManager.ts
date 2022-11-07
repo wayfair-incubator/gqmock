@@ -118,26 +118,6 @@ export default class ApolloServerManager {
     };
   }
 
-  async getNewMock2(
-    target: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    const {query, typeName} = this.buildPrivateQuery(
-      target.__typename as string
-    );
-    const queryResult = await this.apolloServer?.executeOperation({
-      query,
-      variables: {},
-      operationName: this.getFieldName('privateQuery'),
-      http: {
-        url: '',
-        method: '',
-        headers: new Headers(),
-      },
-    });
-
-    return queryResult?.data ? queryResult.data[typeName] : {};
-  }
-
   async getNewMock({
     query,
     typeName,
