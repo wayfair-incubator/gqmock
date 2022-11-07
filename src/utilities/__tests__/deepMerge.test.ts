@@ -120,7 +120,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -156,7 +156,7 @@ describe('deepMerge', () => {
 
     const expectedResult = seed;
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -210,7 +210,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(2);
     expect(mergeResult.warnings).toContain(
@@ -246,7 +246,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -299,7 +299,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -352,7 +352,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -473,7 +473,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -590,7 +590,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -643,7 +643,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -700,7 +700,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -754,9 +754,14 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, null, {
-      metaPropertyPrefix: '$_$',
-    });
+    const mergeResult = await deepMerge(
+      source,
+      seed,
+      {},
+      {
+        metaPropertyPrefix: '$_$',
+      }
+    );
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -794,7 +799,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -850,7 +855,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -893,7 +898,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -926,7 +931,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -958,7 +963,7 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -998,6 +1003,45 @@ describe('deepMerge', () => {
       },
     };
 
+    const query = `query itemQuery {
+        item {
+            __typename
+            id
+            ... on ItemOne {
+                someField1
+                subItem1 {
+                    __typename
+                    id
+                    ... on SubItemOne {
+                        field1
+                        product {
+                          name
+                          type
+                        }
+                    }
+                    ... on SubItemTwo {
+                        field2
+                    }
+                    ... on SubItemThree {
+                        field3
+                    }
+                }
+            }
+            ... on ItemTwo {
+                someField2
+            }
+            ... on ItemThree {
+                someField3
+            }
+            ... on ItemFour {
+                someField4
+            }
+            ... on ItemFive {
+                someField5
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         item: {
@@ -1017,7 +1061,11 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, apolloServerManager);
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      query,
+      operationName: 'itemQuery',
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });

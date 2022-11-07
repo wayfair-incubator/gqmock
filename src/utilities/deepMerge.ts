@@ -1,5 +1,4 @@
 import cloneDeep from 'lodash/cloneDeep';
-import async from 'async';
 import escapeStringRegexp from 'escape-string-regexp';
 import ApolloServerManager from '../ApolloServerManager';
 
@@ -43,160 +42,126 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * Returns the result of merging target into source
  *
  * @param {object} source - Source for the merge
- * @param {object} target - Object to be merged into source
- * @param {object} apolloServerManager - ApolloServerManager instance with access to schema and apollo server
- * @param {object} root0 - Supplemental options for recursive 'merge' calls
- * @param {string} root0.rollingKey - A dot separated key path to keep track of the merge depth
- * @param {string[]} root0.warnings - A list of warnings, e.g. discrepancies between source and target
- * @param {string} root0.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
- * @returns {Promise<object>} A merged object and a list of warnings
+ * @param {object} seed - Object to be merged into source
+ * @param {object} graphqlContext - Properties required for making supplemental GraphQL queries
+ * @param {string} graphqlContext.query - Original GraphQL query
+ * @param {string} graphqlContext.operationName - GraphQL operation name
+ * @param {ApolloServerManager} graphqlContext.apolloServerManager - ApolloServerManager instance
+ * @param {object} options - Merge options
+ * @returns {object} A merged object and a list of warnings
  */
-async function merge(
-  source,
-  target,
-  apolloServerManager: ApolloServerManager,
-  {
-    rollingKey = '',
-    warnings = new Set(),
-    metaPropertyPrefix = '$',
-  }: {
-    rollingKey?: string;
-    warnings?: Set<string>;
-    metaPropertyPrefix?: string;
-  } = {}
+async function deepMerge(
+  source: Record<string, unknown>,
+  seed: Record<string, unknown>,
+  graphqlContext: {
+    query: string;
+    operationName: string;
+    apolloServerManager: ApolloServerManager;
+  },
+  options = {}
 ): Promise<{
   data: Record<string, unknown>;
-  warnings: Set<string>;
+  warnings: string[];
 }> {
-  if (
-    source.__typename &&
-    target.__typename &&
-    source?.__typename !== target?.__typename
+  const {query, operationName, apolloServerManager} = graphqlContext;
+  const warnings = new Set<string>();
+  /**
+   * Returns the result of merging target into source
+   *
+   * @param {object} source - Source for the merge
+   * @param {object} target - Object to be merged into source
+   * @param {object} options - Supplemental options for recursive 'merge' calls
+   * @param {string} options.rollingKey - A dot separated key path to keep track of the merge depth
+   * @param {string} options.metaPropertyPrefix - Prefix used to denote short-hand notation. Default: $
+   * @returns {Promise<object>} A merged object and a list of warnings
+   */
+  async function merge(
+    source,
+    target,
+    {rollingKey = '', metaPropertyPrefix = '$'}
   ) {
-    // merge the new mock into target to derive a new source object with proper nesting
-    const newMock = await apolloServerManager.getNewMock(target);
-    const modifiedSource = (
-      await merge(cloneDeep(target), newMock, apolloServerManager, {
+    if (
+      source.__typename &&
+      target.__typename &&
+      source?.__typename !== target?.__typename
+    ) {
+      source = await apolloServerManager.getNewMock({
+        query,
+        typeName: target.__typename,
+        operationName,
         rollingKey,
-        warnings: new Set(),
-        metaPropertyPrefix,
-      })
-    ).data;
-
-    // assign new values and delete old keys
-    // note: cannot do source = modifiedSource because object references get broken and target ends up pointing to the wrong object
-    Object.assign(source, modifiedSource);
-    Object.keys(source).forEach((key) => {
-      if (!modifiedSource.hasOwnProperty(key)) {
-        delete source[key];
-      }
-    });
-  }
-
-  await async.eachLimit(
-    Object.entries(target),
-    1,
-    async ([targetKey, targetValue]) => {
+      });
+    }
+    for (const [targetKey, targetValue] of Object.entries(target)) {
       const newRollingKey = buildRollingKey(rollingKey, targetKey);
       if (source[targetKey]) {
         if (
           targetValue instanceof Object &&
           Number.isInteger(targetValue[`${metaPropertyPrefix}length`])
         ) {
-          source[targetKey] = await async.mapLimit(
-            [...Array(targetValue[`${metaPropertyPrefix}length`]).keys()],
-            1,
-            async () => {
-              return cloneDeep(
-                (
-                  await merge(
-                    source[targetKey][0],
-                    targetValue,
-                    apolloServerManager,
-                    {
-                      rollingKey: newRollingKey,
-                      warnings,
-                      metaPropertyPrefix,
-                    }
-                  )
-                ).data
-              );
-            }
-          );
+          const sourceItem = source[targetKey][0];
+          source[targetKey] = [];
+          for (let i = 0; i < targetValue[`${metaPropertyPrefix}length`]; i++) {
+            source[targetKey].push(
+              await merge(sourceItem, targetValue, {
+                rollingKey: newRollingKey,
+                metaPropertyPrefix,
+              })
+            );
+          }
 
           const shorthandOverrides = buildShorthandOverridesMap(
             targetValue,
             metaPropertyPrefix
           );
-          await async.eachLimit(
-            Object.entries(shorthandOverrides),
-            1,
-            async ([index, overrideValue]) => {
-              source[targetKey][index] = cloneDeep(
-                (
-                  await merge(
-                    source[targetKey][index],
-                    overrideValue,
-                    apolloServerManager,
-                    {
-                      rollingKey: newRollingKey,
-                      warnings,
-                      metaPropertyPrefix,
-                    }
-                  )
-                ).data
-              );
-            }
-          );
+
+          for (const [index, overrideValue] of Object.entries(
+            shorthandOverrides
+          )) {
+            source[targetKey][index] = await merge(
+              {...source[targetKey][index]},
+              overrideValue,
+              {rollingKey: newRollingKey, metaPropertyPrefix}
+            );
+          }
         } else if (Array.isArray(targetValue)) {
           const lastTargetArrayItem = targetValue[targetValue.length - 1];
           const sourceItem = source[targetKey][0];
           if (Array.isArray(source[targetKey])) {
-            source[targetKey] = await async.mapLimit(
-              targetValue,
-              1,
-              async (item) => {
-                if (lastTargetArrayItem instanceof Object) {
-                  if (Object.entries(item).length) {
-                    return cloneDeep(
-                      (
-                        await merge(sourceItem, item, apolloServerManager, {
-                          rollingKey: newRollingKey,
-                          warnings,
-                          metaPropertyPrefix,
-                        })
-                      ).data
-                    );
-                  }
-
-                  return cloneDeep(
-                    (
-                      await merge(
-                        sourceItem,
-                        lastTargetArrayItem,
-                        apolloServerManager,
-                        {
-                          rollingKey: newRollingKey,
-                          warnings,
-                          metaPropertyPrefix,
-                        }
-                      )
-                    ).data
+            source[targetKey] = [];
+            for (const item of targetValue) {
+              if (Object.entries(item).length) {
+                if (item instanceof Object) {
+                  source[targetKey].push(
+                    await merge({...sourceItem}, item, {
+                      rollingKey: newRollingKey,
+                      metaPropertyPrefix,
+                    })
                   );
+                } else {
+                  source[targetKey].push(item);
                 }
-
-                return lastTargetArrayItem;
+              } else {
+                if (lastTargetArrayItem instanceof Object) {
+                  source[targetKey].push(
+                    await merge(sourceItem, lastTargetArrayItem, {
+                      rollingKey: newRollingKey,
+                      metaPropertyPrefix,
+                    })
+                  );
+                } else {
+                  source[targetKey].push(lastTargetArrayItem);
+                }
               }
-            );
+            }
           } else {
             warnings.add(
               `Skipping "${newRollingKey}": source doesn't define an array at this path.`
             );
           }
         } else if (targetValue instanceof Object) {
-          return merge(source[targetKey], targetValue, apolloServerManager, {
+          source[targetKey] = await merge(source[targetKey], targetValue, {
             rollingKey: newRollingKey,
-            warnings,
             metaPropertyPrefix,
           });
         } else {
@@ -217,38 +182,11 @@ async function merge(
         }
       }
     }
-  );
+    return source;
+  }
 
-  return {
-    data: source,
-    warnings,
-  };
-}
+  const data = await merge(cloneDeep(source), seed, options);
 
-/**
- * Returns the result of merging target into source
- *
- * @param {object} source - Source for the merge
- * @param {object} seed - Object to be merged into source
- * @param {object} apolloServerManager - Schema used for source and target data
- * @param {object} options - Merge options
- * @returns {object} A merged object and a list of warnings
- */
-async function deepMerge(
-  source: Record<string, unknown>,
-  seed: Record<string, unknown>,
-  apolloServerManager: ApolloServerManager,
-  options = {}
-): Promise<{
-  data: Record<string, unknown>;
-  warnings: string[];
-}> {
-  const {data, warnings} = await merge(
-    cloneDeep(source),
-    seed,
-    apolloServerManager,
-    options
-  );
   return {
     data,
     warnings: Array.from(warnings),

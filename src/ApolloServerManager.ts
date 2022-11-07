@@ -12,6 +12,7 @@ import {
 } from 'graphql';
 import {Headers} from 'apollo-server-env';
 import {DocumentNode} from 'graphql/language/ast';
+import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -117,16 +118,28 @@ export default class ApolloServerManager {
     };
   }
 
-  async getNewMock(
-    target: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    const {query, typeName} = this.buildPrivateQuery(
-      target.__typename as string
-    );
-    const queryResult = await this.apolloServer?.executeOperation({
+  async getNewMock({
+    query,
+    typeName,
+    operationName,
+    rollingKey,
+  }: {
+    query: string;
+    typeName: string;
+    operationName: string;
+    rollingKey: string;
+  }): Promise<Record<string, unknown>> {
+    const newQuery = buildUnionTypeQuery({
       query,
+      typeName,
+      operationName,
+      rollingKey,
+      apolloServerManager: this,
+    });
+    const queryResult = await this.apolloServer?.executeOperation({
+      query: newQuery,
       variables: {},
-      operationName: `${this.privateQueryPrefix}_privateQuery`,
+      operationName: this.getFieldName('privateQuery'),
       http: {
         url: '',
         method: '',
@@ -134,6 +147,8 @@ export default class ApolloServerManager {
       },
     });
 
-    return queryResult?.data ? queryResult.data[typeName] : {};
+    return queryResult?.data
+      ? {...queryResult.data[this.getFieldName(typeName)]}
+      : {};
   }
 }
