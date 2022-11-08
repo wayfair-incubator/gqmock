@@ -60,33 +60,39 @@ const schema = `
     
     interface Item {
         id: String
+        type: String
     }
     
     type ItemOne implements Item {
         id: String
+        type: String
         someField1: String
         subItem1: SubItem
     }
     
     type ItemTwo implements Item {
         id: String
+        type: String
         someField2: String
         subItem2: SubItem
     }
     
     type ItemThree implements Item {
         id: String
+        type: String
         someField3: String
         subItem3: SubItem
     }
     
     type ItemFour implements Item {
         id: String
+        type: String
         someField4: String
     }
     
     type ItemFive implements Item {
         id: String
+        type: String
         someField5: String
     }
     
@@ -95,6 +101,7 @@ const schema = `
         productByName(name: String!): Product
         productBySku(sku: String!): Product
         item: Item
+        items(type: String): [Item]
     }
 `;
 
@@ -684,5 +691,140 @@ describe('GraphqlMockingService', () => {
         },
       },
     });
+  });
+
+  it('should handle aliases correctly', async () => {
+    const mockingContext = mockingService.createContext();
+    const operationName = 'itemsQuery';
+    await mockingContext.operation(operationName, {
+      data: {
+        homeItems: [
+          {},
+          {},
+          {},
+          {
+            __typename: 'ItemFive',
+            nodeId: 'aliased id field',
+            type: 'home',
+          },
+        ],
+        officeItems: [
+          {},
+          {},
+          {
+            __typename: 'ItemOne',
+            nodeId: 'string',
+            type: 'office',
+            someField1: 'string',
+            aliasedSubItem: {
+              __typename: 'SubItemOne',
+              id: 'string',
+              field1: 'string',
+              product: {
+                type: 'productType',
+                name: 'productName',
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+      method: 'post',
+      body: JSON.stringify({
+        operationName,
+        query: `fragment commonItemsFields on Item { __typename nodeId: id type ... on ItemOne { someField1 aliasedSubItem: subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}
+
+          query itemsQuery {
+    officeItems: items(type: "office") { ...commonItemsFields }
+    homeItems: items(type: "home") { ...commonItemsFields }
+}`,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      },
+    }).then((res) => res.json());
+
+    const expectedOperationResult = {
+      data: {
+        homeItems: [
+          {
+            __typename: 'ItemFive',
+            nodeId: 'aliased id field',
+            someField5: 'Hello World',
+            type: 'home',
+          },
+          {
+            __typename: 'ItemFive',
+            nodeId: 'aliased id field',
+            someField5: 'Hello World',
+            type: 'home',
+          },
+          {
+            __typename: 'ItemFive',
+            nodeId: 'aliased id field',
+            someField5: 'Hello World',
+            type: 'home',
+          },
+          {
+            __typename: 'ItemFive',
+            nodeId: 'aliased id field',
+            someField5: 'Hello World',
+            type: 'home',
+          },
+        ],
+        officeItems: [
+          {
+            __typename: 'ItemOne',
+            aliasedSubItem: {
+              __typename: 'SubItemOne',
+              field1: 'string',
+              id: 'string',
+              product: {
+                name: 'productName',
+                type: 'productType',
+              },
+            },
+            nodeId: 'string',
+            someField1: 'string',
+            type: 'office',
+          },
+          {
+            __typename: 'ItemOne',
+            aliasedSubItem: {
+              __typename: 'SubItemOne',
+              field1: 'string',
+              id: 'string',
+              product: {
+                name: 'productName',
+                type: 'productType',
+              },
+            },
+            nodeId: 'string',
+            someField1: 'string',
+            type: 'office',
+          },
+          {
+            __typename: 'ItemOne',
+            aliasedSubItem: {
+              __typename: 'SubItemOne',
+              field1: 'string',
+              id: 'string',
+              product: {
+                name: 'productName',
+                type: 'productType',
+              },
+            },
+            nodeId: 'string',
+            someField1: 'string',
+            type: 'office',
+          },
+        ],
+      },
+    };
+
+    expect(operationResult).toEqual(expectedOperationResult);
   });
 });

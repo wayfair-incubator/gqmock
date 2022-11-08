@@ -1,6 +1,7 @@
 import {
   ASTNode,
   FieldNode,
+  FragmentDefinitionNode,
   InlineFragmentNode,
   Kind,
   OperationDefinitionNode,
@@ -45,10 +46,12 @@ export default function ({
   while (keys.length) {
     const key = keys.shift();
     let _node;
-
     if (node) {
       for (const selection of node.selectionSet.selections) {
-        if (selection.kind === Kind.FIELD && selection.name.value === key) {
+        if (
+          selection.kind === Kind.FIELD &&
+          (selection.name.value === key || selection.alias?.value === key)
+        ) {
           _node = selection;
           break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
@@ -56,7 +59,9 @@ export default function ({
             (nestedSelection) => {
               if (nestedSelection.kind === Kind.FIELD) {
                 return (
-                  nestedSelection.name && nestedSelection.name.value === key
+                  (nestedSelection.name &&
+                    nestedSelection.name.value === key) ||
+                  (nestedSelection.alias && nestedSelection.alias.value === key)
                 );
               }
 
@@ -66,6 +71,44 @@ export default function ({
           if (correctSelection) {
             _node = correctSelection;
             break;
+          }
+        } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
+          const fragmentDefinition = queryAst.definitions.find(
+            (definition) =>
+              definition.kind === Kind.FRAGMENT_DEFINITION &&
+              definition.name.value === selection.name.value
+          );
+          for (const fragmentSelection of (
+            fragmentDefinition as FragmentDefinitionNode
+          )?.selectionSet.selections) {
+            if (
+              fragmentSelection.kind === Kind.FIELD &&
+              (fragmentSelection.name.value === key ||
+                fragmentSelection.alias?.value === key)
+            ) {
+              _node = fragmentSelection;
+              break;
+            } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
+              const correctFragmentSelection =
+                fragmentSelection.selectionSet.selections.find(
+                  (nestedSelection) => {
+                    if (nestedSelection.kind === Kind.FIELD) {
+                      return (
+                        (nestedSelection.name &&
+                          nestedSelection.name.value === key) ||
+                        (nestedSelection.alias &&
+                          nestedSelection.alias.value === key)
+                      );
+                    }
+
+                    return false;
+                  }
+                );
+              if (correctFragmentSelection) {
+                _node = correctFragmentSelection;
+                break;
+              }
+            }
           }
         }
       }
@@ -78,7 +121,7 @@ export default function ({
 
   const fields: Array<FieldNode | InlineFragmentNode> = [];
 
-  node.selectionSet.selections.forEach((selection) => {
+  node?.selectionSet?.selections.forEach((selection) => {
     if (selection.kind === Kind.FIELD) {
       fields.push(selection);
     } else if (selection.kind === Kind.INLINE_FRAGMENT) {
@@ -92,6 +135,30 @@ export default function ({
           >)
         );
       }
+    } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
+      const fragmentDefinition = queryAst.definitions.find(
+        (definition) =>
+          definition.kind === Kind.FRAGMENT_DEFINITION &&
+          definition.name.value === selection.name.value
+      );
+      (
+        fragmentDefinition as FragmentDefinitionNode
+      )?.selectionSet.selections.forEach((fragmentSelection) => {
+        if (fragmentSelection.kind === Kind.FIELD) {
+          fields.push(fragmentSelection);
+        } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
+          if (
+            fragmentSelection.typeCondition &&
+            fragmentSelection.typeCondition.name.value === typeName
+          ) {
+            fields.push(
+              ...(fragmentSelection.selectionSet.selections as Array<
+                FieldNode | InlineFragmentNode
+              >)
+            );
+          }
+        }
+      });
     }
   });
 

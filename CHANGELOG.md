@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.4.0] - 2022-11-08
+
+### Feat
+
+- Add support for aliases and fragment spread field selection
+
 ## [v0.3.1] - 2022-11-02
 
 ### Chore
