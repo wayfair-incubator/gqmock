@@ -12,6 +12,16 @@ import ApolloServerManager from '../ApolloServerManager';
 
 /**
  *
+ * @param {FieldNode} node - GraphQL FieldNode
+ * @param {string} key - GraphQL node name or alias
+ * @returns {boolean} - Whether node matches name or alias
+ */
+function keyMatchesNode(node: FieldNode, key) {
+  return node.name?.value === key || node.alias?.value === key;
+}
+
+/**
+ *
  * @param {object} root0 - parameters
  * @param {string} root0.query - Original GraphQL query with inline fragments
  * @param {string} root0.typeName - Type to fetch
@@ -48,21 +58,14 @@ export default function ({
     let _node;
     if (node) {
       for (const selection of node.selectionSet.selections) {
-        if (
-          selection.kind === Kind.FIELD &&
-          (selection.name.value === key || selection.alias?.value === key)
-        ) {
+        if (selection.kind === Kind.FIELD && keyMatchesNode(selection, key)) {
           _node = selection;
           break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
           const correctSelection = selection.selectionSet.selections.find(
             (nestedSelection) => {
               if (nestedSelection.kind === Kind.FIELD) {
-                return (
-                  (nestedSelection.name &&
-                    nestedSelection.name.value === key) ||
-                  (nestedSelection.alias && nestedSelection.alias.value === key)
-                );
+                return keyMatchesNode(nestedSelection, key);
               }
 
               return false;
@@ -83,8 +86,7 @@ export default function ({
           )?.selectionSet.selections) {
             if (
               fragmentSelection.kind === Kind.FIELD &&
-              (fragmentSelection.name.value === key ||
-                fragmentSelection.alias?.value === key)
+              keyMatchesNode(fragmentSelection, key)
             ) {
               _node = fragmentSelection;
               break;
@@ -93,12 +95,7 @@ export default function ({
                 fragmentSelection.selectionSet.selections.find(
                   (nestedSelection) => {
                     if (nestedSelection.kind === Kind.FIELD) {
-                      return (
-                        (nestedSelection.name &&
-                          nestedSelection.name.value === key) ||
-                        (nestedSelection.alias &&
-                          nestedSelection.alias.value === key)
-                      );
+                      return keyMatchesNode(nestedSelection, key);
                     }
 
                     return false;
