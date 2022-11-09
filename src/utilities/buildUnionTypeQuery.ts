@@ -16,8 +16,11 @@ import ApolloServerManager from '../ApolloServerManager';
  * @param {string} key - GraphQL node name or alias
  * @returns {boolean} - Whether node matches name or alias
  */
-function keyMatchesNode(node: FieldNode, key) {
-  return node.name?.value === key || node.alias?.value === key;
+function keyMatchesFieldNode(node, key) {
+  return (
+    node.kind === Kind.FIELD &&
+    (node.name?.value === key || node.alias?.value === key)
+  );
 }
 
 /**
@@ -48,8 +51,7 @@ export default function ({
   let node = queryAst.definitions.find((definition) => {
     return (
       definition.kind === Kind.OPERATION_DEFINITION &&
-      definition.name &&
-      definition.name.value === operationName
+      definition.name?.value === operationName
     );
   }) as OperationDefinitionNode;
 
@@ -58,17 +60,13 @@ export default function ({
     let _node;
     if (node) {
       for (const selection of node.selectionSet.selections) {
-        if (selection.kind === Kind.FIELD && keyMatchesNode(selection, key)) {
+        if (keyMatchesFieldNode(selection, key)) {
           _node = selection;
           break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
           const correctSelection = selection.selectionSet.selections.find(
             (nestedSelection) => {
-              if (nestedSelection.kind === Kind.FIELD) {
-                return keyMatchesNode(nestedSelection, key);
-              }
-
-              return false;
+              return keyMatchesFieldNode(nestedSelection, key);
             }
           );
           if (correctSelection) {
@@ -84,21 +82,14 @@ export default function ({
           for (const fragmentSelection of (
             fragmentDefinition as FragmentDefinitionNode
           )?.selectionSet.selections) {
-            if (
-              fragmentSelection.kind === Kind.FIELD &&
-              keyMatchesNode(fragmentSelection, key)
-            ) {
+            if (keyMatchesFieldNode(fragmentSelection, key)) {
               _node = fragmentSelection;
               break;
             } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
               const correctFragmentSelection =
                 fragmentSelection.selectionSet.selections.find(
                   (nestedSelection) => {
-                    if (nestedSelection.kind === Kind.FIELD) {
-                      return keyMatchesNode(nestedSelection, key);
-                    }
-
-                    return false;
+                    return keyMatchesFieldNode(nestedSelection, key);
                   }
                 );
               if (correctFragmentSelection) {
