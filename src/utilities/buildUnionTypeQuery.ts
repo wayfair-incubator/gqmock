@@ -1,6 +1,7 @@
 import {
   ASTNode,
   FieldNode,
+  FragmentDefinitionNode,
   InlineFragmentNode,
   Kind,
   OperationDefinitionNode,
@@ -8,6 +9,19 @@ import {
   print,
 } from 'graphql';
 import ApolloServerManager from '../ApolloServerManager';
+
+/**
+ *
+ * @param {FieldNode} node - GraphQL FieldNode
+ * @param {string} key - GraphQL node name or alias
+ * @returns {boolean} - Whether node matches name or alias
+ */
+function keyMatchesFieldNode(node, key) {
+  return (
+    node.kind === Kind.FIELD &&
+    (node.name?.value === key || node.alias?.value === key)
+  );
+}
 
 /**
  *
@@ -37,35 +51,52 @@ export default function ({
   let node = queryAst.definitions.find((definition) => {
     return (
       definition.kind === Kind.OPERATION_DEFINITION &&
-      definition.name &&
-      definition.name.value === operationName
+      definition.name?.value === operationName
     );
   }) as OperationDefinitionNode;
 
   while (keys.length) {
     const key = keys.shift();
     let _node;
-
     if (node) {
       for (const selection of node.selectionSet.selections) {
-        if (selection.kind === Kind.FIELD && selection.name.value === key) {
+        if (keyMatchesFieldNode(selection, key)) {
           _node = selection;
           break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
           const correctSelection = selection.selectionSet.selections.find(
             (nestedSelection) => {
-              if (nestedSelection.kind === Kind.FIELD) {
-                return (
-                  nestedSelection.name && nestedSelection.name.value === key
-                );
-              }
-
-              return false;
+              return keyMatchesFieldNode(nestedSelection, key);
             }
           );
           if (correctSelection) {
             _node = correctSelection;
             break;
+          }
+        } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
+          const fragmentDefinition = queryAst.definitions.find(
+            (definition) =>
+              definition.kind === Kind.FRAGMENT_DEFINITION &&
+              definition.name.value === selection.name.value
+          );
+          for (const fragmentSelection of (
+            fragmentDefinition as FragmentDefinitionNode
+          )?.selectionSet.selections) {
+            if (keyMatchesFieldNode(fragmentSelection, key)) {
+              _node = fragmentSelection;
+              break;
+            } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
+              const correctFragmentSelection =
+                fragmentSelection.selectionSet.selections.find(
+                  (nestedSelection) => {
+                    return keyMatchesFieldNode(nestedSelection, key);
+                  }
+                );
+              if (correctFragmentSelection) {
+                _node = correctFragmentSelection;
+                break;
+              }
+            }
           }
         }
       }
@@ -78,7 +109,7 @@ export default function ({
 
   const fields: Array<FieldNode | InlineFragmentNode> = [];
 
-  node.selectionSet.selections.forEach((selection) => {
+  node?.selectionSet?.selections.forEach((selection) => {
     if (selection.kind === Kind.FIELD) {
       fields.push(selection);
     } else if (selection.kind === Kind.INLINE_FRAGMENT) {
@@ -92,6 +123,30 @@ export default function ({
           >)
         );
       }
+    } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
+      const fragmentDefinition = queryAst.definitions.find(
+        (definition) =>
+          definition.kind === Kind.FRAGMENT_DEFINITION &&
+          definition.name.value === selection.name.value
+      );
+      (
+        fragmentDefinition as FragmentDefinitionNode
+      )?.selectionSet.selections.forEach((fragmentSelection) => {
+        if (fragmentSelection.kind === Kind.FIELD) {
+          fields.push(fragmentSelection);
+        } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
+          if (
+            fragmentSelection.typeCondition &&
+            fragmentSelection.typeCondition.name.value === typeName
+          ) {
+            fields.push(
+              ...(fragmentSelection.selectionSet.selections as Array<
+                FieldNode | InlineFragmentNode
+              >)
+            );
+          }
+        }
+      });
     }
   });
 

@@ -57,6 +57,7 @@ const graphqlRoutes = (
         });
       }
       delete operationResult.http;
+      delete operationResult.extensions;
     } catch (error) {
       res.status(500);
       res.send({
