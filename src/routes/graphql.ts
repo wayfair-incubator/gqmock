@@ -44,21 +44,32 @@ const graphqlRoutes = (
     let operationResult;
     try {
       const apolloServer = apolloServerManager.apolloServer;
+      console.log('47 here michal: ');
+      console.log('48 !!apolloServer michal: ', !!apolloServer);
       if (apolloServer) {
         operationResult = await apolloServer.executeOperation({
-          query: parsedQuery,
+          // query: parsedQuery,
+          query: query,
           variables,
           operationName,
-          http: {
-            url: '',
-            method: '',
-            headers: new Headers(),
-          },
+          // http: {
+          //   url: '',
+          //   method: '',
+          //   headers: new Headers(),
+          // },
         });
+        // operationResult = await apolloServer.executeOperation({
+        //   query: 'query SayHelloWorld($name: String) { hello(name: $name) }',
+        //   variables: { name: 'world' },
+        // });
+        // delete operationResult.http;
+        // delete operationResult.extensions;
+        console.log('64 operationResult michal: ', operationResult);
       }
-      delete operationResult.http;
-      delete operationResult.extensions;
+      console.log('60 operationResult michal: ', operationResult);
+      console.log('60 here michal: ');
     } catch (error) {
+      console.log('62 error michal: ', error);
       res.status(500);
       res.send({
         message: 'GraphQL operation execution error',

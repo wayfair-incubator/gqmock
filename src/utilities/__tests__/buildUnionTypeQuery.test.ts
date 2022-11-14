@@ -4,7 +4,7 @@ import ApolloServerManager from '../../ApolloServerManager';
 describe('buildUnionTypeQuery', function () {
   let apolloServerManager;
   const schema = `
-    type Tag {
+    type Tag1 {
         value: String
     }
     
@@ -15,7 +15,7 @@ describe('buildUnionTypeQuery', function () {
     type ProductVariant {
         name: String
         color: String
-        tags: [Tag]
+        tags: [Tag1]
         pictures: [Picture]
     }
     

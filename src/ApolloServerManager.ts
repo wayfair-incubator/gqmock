@@ -1,4 +1,4 @@
-import {ApolloServer} from 'apollo-server';
+import {ApolloServer} from '@apollo/server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
 import {
   GraphQLSchema,
@@ -6,13 +6,15 @@ import {
   visit,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  GraphQLObjectType,
   Kind,
   buildASTSchema,
+  printSchema
 } from 'graphql';
-import {Headers} from 'apollo-server-env';
+import {Headers} from 'node-fetch';
 import {DocumentNode} from 'graphql/language/ast';
 import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
+import { addMocksToSchema } from "@graphql-tools/mock";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -46,10 +48,23 @@ export default class ApolloServerManager {
       this.graphQLSchema = buildASTSchema(augmentedSchemaAst);
     }
 
-    this.apolloServerInstance = new ApolloServer({
-      typeDefs: this.graphQLSchema,
-      mocks: true,
-    });
+    const { fakerOptions } = options;
+
+    console.log('52 schemaSource michal: ', schemaSource);
+    try {
+      // this.graphQLSchema = makeExecutableSchema(augmentedSchemaAst);
+      this.apolloServerInstance = new ApolloServer({
+        // typeDefs: makeExecutableSchema(schemaSource),
+        // typeDefs: schemaSource,
+        schema: addMocksToSchema({
+          schema: this.graphQLSchema,
+          // mocks: {}
+        })
+      });
+      console.log('64 this.apolloServerInstance michal: ', this.apolloServerInstance);
+    } catch (e) {
+      console.log('61 e michal: ', e);
+    }
   }
 
   private getAugmentedSchema(schemaSource: string): DocumentNode {
@@ -97,27 +112,6 @@ export default class ApolloServerManager {
     return `${this.privateQueryPrefix}_${__typename}`;
   }
 
-  buildPrivateQuery(__typename: string): {
-    query: string;
-    typeName: string;
-  } {
-    const type = this.graphQLSchema?.getType(__typename) as GraphQLObjectType;
-    if (!type) {
-      throw new Error(`Type ${__typename} not found in schema`);
-    }
-
-    const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
-    const typeName = this.getFieldName(__typename);
-    return {
-      query: `query ${this.getFieldName('privateQuery')} {
-      ${typeName} {
-        ${fieldNames?.join('\n')}
-      }
-    }`,
-      typeName,
-    };
-  }
-
   async getNewMock({
     query,
     typeName,
@@ -143,7 +137,7 @@ export default class ApolloServerManager {
       http: {
         url: '',
         method: '',
-        headers: new Headers(),
+        // headers: new Headers(),
       },
     });
 

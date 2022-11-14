@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import GraphqlMockingService from '../GraphqlMockingService';
 
 const schema = `
-    type Tag {
+    type Tag1 {
         value: String
     }
     
@@ -13,7 +13,7 @@ const schema = `
     type ProductVariant {
         name: String
         color: String
-        tags: [Tag]
+        tags: [Tag1]
         pictures: [Picture]
     }
     
@@ -154,7 +154,7 @@ describe('GraphqlMockingService', () => {
     await subgraphMockingService.stop();
   });
 
-  it('should allow operation seed registration', async () => {
+  it.only('should allow operation seed registration', async () => {
     const mockingContext = mockingService.createContext();
     const operationName = 'productByName';
     await mockingContext.operation(
