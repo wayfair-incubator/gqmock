@@ -43,19 +43,21 @@ const graphqlRoutes = (
     try {
       const apolloServer = apolloServerManager.apolloServer;
       if (apolloServer) {
-        operationResult = await apolloServer.executeOperation({
-          query: parsedQuery,
-          variables,
-          operationName,
-        }).then(response => response.body)
-          .then(body => {
+        operationResult = await apolloServer
+          .executeOperation({
+            query: parsedQuery,
+            variables,
+            operationName,
+          })
+          .then((response) => response.body)
+          .then((body) => {
             if (body.kind === 'single') {
-              return body.singleResult
+              return body.singleResult;
             } else if (body.kind === 'incremental') {
               return {
                 initialResult: body.initialResult,
-                subsequentResults: body.subsequentResults
-              }
+                subsequentResults: body.subsequentResults,
+              };
             }
           });
       }

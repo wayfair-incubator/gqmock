@@ -104,9 +104,11 @@ Stops the mocking server.
 
 Registers a schema with the mock server.
 
-| Parameter Name | Required | Description            | Type   | Default |
-| -------------- | -------- | ---------------------- | ------ | ------- |
-| `schema`       | Yes      | A valid GraphQL schema | string |         |
+| Parameter Name        | Required | Description                                           | Type   | Default |
+| --------------------- | -------- | ----------------------------------------------------- | ------ | ------- |
+| `schema`              | Yes      | A valid GraphQL schema                                | string |         |
+| `options`             | No       | Schema registration options                           | object |         |
+| `options.fakerConfig` | No       | Map of fields to return realistic data using faker.js | object |         |
 
 #### `GraphqlMockingService.createContext`
 
@@ -303,6 +305,82 @@ const operationSeedResponse = {
     },
   },
 };
+```
+
+### Faker.js support
+
+```javascript
+const schema = `
+    type ProductVariant {
+        name: String
+        color: String
+        tags: [Tag]
+        pictures: [Picture]
+    }
+    
+    type Dimensions {
+        length: Int
+        width: Int
+        height: Int
+    }
+    
+    type Product {
+        name: String
+        variants: [ProductVariant]
+        dimensions: Dimensions
+    }`;
+
+const fakerConfig = {
+  Product: {
+    name: {
+      method: 'random.alpha',
+      args: {count: 5, casing: 'upper', bannedChars: ['A']},
+    },
+  },
+  Dimensions: {
+    length: {
+      method: 'random.numeric',
+      args: 2,
+    },
+    width: {
+      method: 'random.numeric',
+      args: [2],
+    },
+    height: {
+      method: 'random.numeric',
+      args: 3,
+    },
+  },
+  ProductVariant: {
+    name: {
+      method: 'random.words',
+    },
+  },
+};
+
+const mockingService = new GraphqlMockingService();
+await mockingService.start();
+await mockingService.registerSchema(schema, {fakerConfig});
+```
+
+```graphql
+query getProduct {
+  product {
+    name
+  }
+}
+```
+
+will resolve as:
+
+```json
+{
+  "data": {
+    "product": {
+      "name": "DTCIC"
+    }
+  }
+}
 ```
 
 ## Roadmap

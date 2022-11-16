@@ -6,18 +6,19 @@ import {
   visit,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  GraphQLObjectType,
   Kind,
   buildASTSchema,
 } from 'graphql';
 import {DocumentNode} from 'graphql/language/ast';
 import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
-import { addMocksToSchema } from "@graphql-tools/mock";
+import {addMocksToSchema} from '@graphql-tools/mock';
+import {faker} from '@faker-js/faker';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
+  fakerConfig: Record<string, Record<string, Record<string, string>>>;
 };
 
 export default class ApolloServerManager {
@@ -46,11 +47,50 @@ export default class ApolloServerManager {
       this.graphQLSchema = buildASTSchema(augmentedSchemaAst);
     }
 
+    const {fakerConfig = {}} = options;
+
     this.apolloServerInstance = new ApolloServer({
       schema: addMocksToSchema({
         schema: this.graphQLSchema,
-      })
+        mocks: this.createCustomMocks(fakerConfig),
+      }),
     });
+  }
+
+  private createCustomMocks(fakerConfig) {
+    const mocks = {};
+    Object.entries(fakerConfig).forEach(([typeName, typeConfig]) => {
+      Object.entries(
+        typeConfig as Record<string, Record<string, string>>
+      ).forEach(([fieldName, fakerFieldConfig]) => {
+        mocks[typeName] ??= {};
+        const fakerKeys = fakerFieldConfig.method.split('.');
+        let fakerMethod;
+        if (fakerKeys.length) {
+          fakerMethod = faker;
+          while (fakerKeys.length) {
+            const fakerKey = fakerKeys.shift() as string;
+            fakerMethod = fakerMethod[fakerKey];
+            if (!fakerMethod) {
+              break;
+            }
+          }
+        }
+        if (fakerMethod) {
+          mocks[typeName][fieldName] = () => {
+            if (Array.isArray(fakerFieldConfig.args)) {
+              return fakerMethod(...fakerFieldConfig.args);
+            } else if (!!fakerFieldConfig.args) {
+              return fakerMethod(fakerFieldConfig.args);
+            } else {
+              return fakerMethod();
+            }
+          };
+        }
+      });
+    });
+
+    return mocks;
   }
 
   private getAugmentedSchema(schemaSource: string): DocumentNode {
@@ -98,27 +138,6 @@ export default class ApolloServerManager {
     return `${this.privateQueryPrefix}_${__typename}`;
   }
 
-  buildPrivateQuery(__typename: string): {
-    query: string;
-    typeName: string;
-  } {
-    const type = this.graphQLSchema?.getType(__typename) as GraphQLObjectType;
-    if (!type) {
-      throw new Error(`Type ${__typename} not found in schema`);
-    }
-
-    const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
-    const typeName = this.getFieldName(__typename);
-    return {
-      query: `query ${this.getFieldName('privateQuery')} {
-      ${typeName} {
-        ${fieldNames?.join('\n')}
-      }
-    }`,
-      typeName,
-    };
-  }
-
   async getNewMock({
     query,
     typeName,
@@ -137,21 +156,25 @@ export default class ApolloServerManager {
       rollingKey,
       apolloServerManager: this,
     });
-    const queryResult = await this.apolloServer?.executeOperation({
-      query: newQuery,
-      variables: {},
-      operationName: this.getFieldName('privateQuery'),
-    }).then(response => response.body)
-      .then(body => {
+    const queryResult = (await this.apolloServer
+      ?.executeOperation({
+        query: newQuery,
+        variables: {},
+        operationName: this.getFieldName('privateQuery'),
+      })
+      .then((response) => response.body)
+      .then((body) => {
         if (body.kind === 'single') {
-          return body.singleResult
+          return body.singleResult;
         } else if (body.kind === 'incremental') {
           return {
             initialResult: body.initialResult,
-            subsequentResults: body.subsequentResults
-          }
+            subsequentResults: body.subsequentResults,
+          };
         }
-      });
+      })) as {
+      data: Record<string, object>;
+    };
 
     return queryResult?.data
       ? {...queryResult.data[this.getFieldName(typeName)]}

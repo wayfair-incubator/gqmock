@@ -137,7 +137,6 @@ describe('GraphqlMockingService', () => {
     console.info = jest.fn();
     mockingService = new GraphqlMockingService({port});
     await mockingService.start();
-    await mockingService.registerSchema(schema);
 
     subgraphMockingService = new GraphqlMockingService({
       port: subgraphPort,
@@ -145,6 +144,10 @@ describe('GraphqlMockingService', () => {
     });
     await subgraphMockingService.start();
     await subgraphMockingService.registerSchema(subgraphSchema);
+  });
+
+  beforeEach(async () => {
+    await mockingService.registerSchema(schema);
   });
 
   afterAll(async () => {
@@ -826,5 +829,87 @@ describe('GraphqlMockingService', () => {
     };
 
     expect(operationResult).toEqual(expectedOperationResult);
+  });
+
+  it('should use the faker config to generate realistic data for unseeded fields', async () => {
+    const fakerConfig = {
+      Product: {
+        name: {
+          method: 'commerce.product',
+        },
+      },
+      Dimensions: {
+        length: {
+          method: 'random.numeric',
+          args: 2,
+        },
+        width: {
+          method: 'random.numeric',
+          args: [2],
+        },
+        height: {
+          method: 'random.numeric',
+          args: 3,
+        },
+      },
+      ProductVariant: {
+        name: {
+          method: 'random.words',
+          args: 3,
+        },
+      },
+    };
+
+    await mockingService.registerSchema(schema, {fakerConfig});
+    const mockingContext = mockingService.createContext();
+    const operationName = 'productByName';
+    await mockingContext.operation(
+      operationName,
+      {
+        data: {
+          productByName: {
+            name: 'Flagship Desk',
+          },
+        },
+      },
+      {name: 'desk'}
+    );
+
+    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+      method: 'post',
+      body: JSON.stringify({
+        operationName,
+        query:
+          'query productByName($name: String!) { productByName(name: $name) { name, dimensions { length, width, height }, variants { name } } }',
+        variables: {name: 'desk'},
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      },
+    }).then((res) => res.json());
+
+    expect(operationResult).toEqual({
+      data: {
+        [operationName]: expect.objectContaining({
+          name: 'Flagship Desk',
+        }),
+      },
+    });
+    expect(
+      operationResult.data[operationName].dimensions.height.toString().length
+    ).toEqual(3);
+    expect(
+      operationResult.data[operationName].dimensions.length.toString().length
+    ).toEqual(2);
+    expect(
+      operationResult.data[operationName].dimensions.width.toString().length
+    ).toEqual(2);
+    expect(operationResult.data[operationName].variants[0].name).not.toEqual(
+      'Hello World'
+    );
+    expect(operationResult.data[operationName].variants[1].name).not.toEqual(
+      'Hello World'
+    );
   });
 });

@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.5.0] - 2022-11-16
+
+### Feat
+
+- Add [faker.js](https://fakerjs.dev/) support
+
 ## [v0.4.0] - 2022-11-08
 
 ### Feat
