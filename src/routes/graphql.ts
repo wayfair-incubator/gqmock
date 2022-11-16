@@ -1,6 +1,4 @@
 import express from 'express';
-import {Headers} from 'apollo-server-env';
-
 import {parse} from 'graphql';
 import GraphqlMockingContextLogger from '../utilities/Logger';
 import createRouter from '../utilities/createRouter';
@@ -49,15 +47,18 @@ const graphqlRoutes = (
           query: parsedQuery,
           variables,
           operationName,
-          http: {
-            url: '',
-            method: '',
-            headers: new Headers(),
-          },
-        });
+        }).then(response => response.body)
+          .then(body => {
+            if (body.kind === 'single') {
+              return body.singleResult
+            } else if (body.kind === 'incremental') {
+              return {
+                initialResult: body.initialResult,
+                subsequentResults: body.subsequentResults
+              }
+            }
+          });
       }
-      delete operationResult.http;
-      delete operationResult.extensions;
     } catch (error) {
       res.status(500);
       res.send({

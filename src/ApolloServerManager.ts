@@ -1,4 +1,4 @@
-import {ApolloServer} from 'apollo-server';
+import {ApolloServer} from '@apollo/server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
 import {
   GraphQLSchema,
@@ -10,9 +10,9 @@ import {
   Kind,
   buildASTSchema,
 } from 'graphql';
-import {Headers} from 'apollo-server-env';
 import {DocumentNode} from 'graphql/language/ast';
 import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
+import { addMocksToSchema } from "@graphql-tools/mock";
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
@@ -47,8 +47,9 @@ export default class ApolloServerManager {
     }
 
     this.apolloServerInstance = new ApolloServer({
-      typeDefs: this.graphQLSchema,
-      mocks: true,
+      schema: addMocksToSchema({
+        schema: this.graphQLSchema,
+      })
     });
   }
 
@@ -140,12 +141,17 @@ export default class ApolloServerManager {
       query: newQuery,
       variables: {},
       operationName: this.getFieldName('privateQuery'),
-      http: {
-        url: '',
-        method: '',
-        headers: new Headers(),
-      },
-    });
+    }).then(response => response.body)
+      .then(body => {
+        if (body.kind === 'single') {
+          return body.singleResult
+        } else if (body.kind === 'incremental') {
+          return {
+            initialResult: body.initialResult,
+            subsequentResults: body.subsequentResults
+          }
+        }
+      });
 
     return queryResult?.data
       ? {...queryResult.data[this.getFieldName(typeName)]}
