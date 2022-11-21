@@ -18,12 +18,13 @@ const GQMOCK_QUERY_PREFIX = 'gqmock';
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
-  fakerConfig: Record<string, Record<string, Record<string, string>>>;
+  fakerConfig: Record<string, object>;
 };
 
 export default class ApolloServerManager {
   private apolloServerInstance;
   private graphQLSchema: GraphQLSchema | null = null;
+  private fakerConfig: Record<string, object> = {};
   get apolloServer(): ApolloServer | null {
     return this.apolloServerInstance || null;
   }
@@ -47,12 +48,14 @@ export default class ApolloServerManager {
       this.graphQLSchema = buildASTSchema(augmentedSchemaAst);
     }
 
-    const {fakerConfig = {}} = options;
+    if (options.fakerConfig) {
+      this.fakerConfig = options.fakerConfig;
+    }
 
     this.apolloServerInstance = new ApolloServer({
       schema: addMocksToSchema({
         schema: this.graphQLSchema,
-        mocks: this.createCustomMocks(fakerConfig),
+        mocks: this.createCustomMocks(this.fakerConfig),
       }),
     });
   }
@@ -156,11 +159,31 @@ export default class ApolloServerManager {
       rollingKey,
       apolloServerManager: this,
     });
-    const queryResult = (await this.apolloServer
+    const queryResult = await this.executeOperation({
+      query: newQuery,
+      variables: {},
+      operationName: this.getFieldName('privateQuery'),
+    });
+
+    return queryResult?.data
+      ? {...queryResult.data[this.getFieldName(typeName)]}
+      : {};
+  }
+
+  async executeOperation({
+    query,
+    variables,
+    operationName,
+  }: {
+    query: string;
+    variables: Record<string, unknown>;
+    operationName: string;
+  }): Promise<{data: Record<string, object>}> {
+    return this.apolloServer
       ?.executeOperation({
-        query: newQuery,
-        variables: {},
-        operationName: this.getFieldName('privateQuery'),
+        query,
+        variables,
+        operationName,
       })
       .then((response) => response.body)
       .then((body) => {
@@ -172,12 +195,8 @@ export default class ApolloServerManager {
             subsequentResults: body.subsequentResults,
           };
         }
-      })) as {
+      }) as Promise<{
       data: Record<string, object>;
-    };
-
-    return queryResult?.data
-      ? {...queryResult.data[this.getFieldName(typeName)]}
-      : {};
+    }>;
   }
 }
