@@ -1,7 +1,6 @@
-import fetch from 'node-fetch';
+import fetch, {Response} from 'node-fetch';
 import createApp from './utilities/createApp';
 import {Seed} from './seed/types';
-import {Response} from 'express';
 
 type MockServerOptions = {
   port?: number;

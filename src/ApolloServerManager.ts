@@ -1,4 +1,4 @@
-import {ApolloServer} from 'apollo-server';
+import {ApolloServer} from '@apollo/server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
 import {
   GraphQLSchema,
@@ -6,23 +6,25 @@ import {
   visit,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  GraphQLObjectType,
   Kind,
   buildASTSchema,
 } from 'graphql';
-import {Headers} from 'apollo-server-env';
 import {DocumentNode} from 'graphql/language/ast';
 import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
+import {addMocksToSchema} from '@graphql-tools/mock';
+import {faker} from '@faker-js/faker';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
 
 type SchemaRegistrationOptions = {
   subgraph: boolean;
+  fakerConfig: Record<string, object>;
 };
 
 export default class ApolloServerManager {
   private apolloServerInstance;
   private graphQLSchema: GraphQLSchema | null = null;
+  private fakerConfig: Record<string, object> = {};
   get apolloServer(): ApolloServer | null {
     return this.apolloServerInstance || null;
   }
@@ -46,10 +48,52 @@ export default class ApolloServerManager {
       this.graphQLSchema = buildASTSchema(augmentedSchemaAst);
     }
 
+    if (options.fakerConfig) {
+      this.fakerConfig = options.fakerConfig;
+    }
+
     this.apolloServerInstance = new ApolloServer({
-      typeDefs: this.graphQLSchema,
-      mocks: true,
+      schema: addMocksToSchema({
+        schema: this.graphQLSchema,
+        mocks: this.createCustomMocks(this.fakerConfig),
+      }),
     });
+  }
+
+  private createCustomMocks(fakerConfig) {
+    const mocks = {};
+    Object.entries(fakerConfig).forEach(([typeName, typeConfig]) => {
+      Object.entries(
+        typeConfig as Record<string, Record<string, string>>
+      ).forEach(([fieldName, fakerFieldConfig]) => {
+        mocks[typeName] ??= {};
+        const fakerKeys = fakerFieldConfig.method.split('.');
+        let fakerMethod;
+        if (fakerKeys.length) {
+          fakerMethod = faker;
+          while (fakerKeys.length) {
+            const fakerKey = fakerKeys.shift() as string;
+            fakerMethod = fakerMethod[fakerKey];
+            if (!fakerMethod) {
+              break;
+            }
+          }
+        }
+        if (fakerMethod) {
+          mocks[typeName][fieldName] = () => {
+            if (Array.isArray(fakerFieldConfig.args)) {
+              return fakerMethod(...fakerFieldConfig.args);
+            } else if (!!fakerFieldConfig.args) {
+              return fakerMethod(fakerFieldConfig.args);
+            } else {
+              return fakerMethod();
+            }
+          };
+        }
+      });
+    });
+
+    return mocks;
   }
 
   private getAugmentedSchema(schemaSource: string): DocumentNode {
@@ -97,27 +141,6 @@ export default class ApolloServerManager {
     return `${this.privateQueryPrefix}_${__typename}`;
   }
 
-  buildPrivateQuery(__typename: string): {
-    query: string;
-    typeName: string;
-  } {
-    const type = this.graphQLSchema?.getType(__typename) as GraphQLObjectType;
-    if (!type) {
-      throw new Error(`Type ${__typename} not found in schema`);
-    }
-
-    const fieldNames = type.astNode?.fields?.map((field) => field.name.value);
-    const typeName = this.getFieldName(__typename);
-    return {
-      query: `query ${this.getFieldName('privateQuery')} {
-      ${typeName} {
-        ${fieldNames?.join('\n')}
-      }
-    }`,
-      typeName,
-    };
-  }
-
   async getNewMock({
     query,
     typeName,
@@ -136,19 +159,44 @@ export default class ApolloServerManager {
       rollingKey,
       apolloServerManager: this,
     });
-    const queryResult = await this.apolloServer?.executeOperation({
+    const queryResult = await this.executeOperation({
       query: newQuery,
       variables: {},
       operationName: this.getFieldName('privateQuery'),
-      http: {
-        url: '',
-        method: '',
-        headers: new Headers(),
-      },
     });
 
     return queryResult?.data
       ? {...queryResult.data[this.getFieldName(typeName)]}
       : {};
+  }
+
+  async executeOperation({
+    query,
+    variables,
+    operationName,
+  }: {
+    query: string;
+    variables: Record<string, unknown>;
+    operationName: string;
+  }): Promise<{data: Record<string, object>}> {
+    return this.apolloServer
+      ?.executeOperation({
+        query,
+        variables,
+        operationName,
+      })
+      .then((response) => response.body)
+      .then((body) => {
+        if (body.kind === 'single') {
+          return body.singleResult;
+        } else if (body.kind === 'incremental') {
+          return {
+            initialResult: body.initialResult,
+            subsequentResults: body.subsequentResults,
+          };
+        }
+      }) as Promise<{
+      data: Record<string, object>;
+    }>;
   }
 }

@@ -1,6 +1,4 @@
 import express from 'express';
-import {Headers} from 'apollo-server-env';
-
 import {parse} from 'graphql';
 import GraphqlMockingContextLogger from '../utilities/Logger';
 import createRouter from '../utilities/createRouter';
@@ -45,19 +43,12 @@ const graphqlRoutes = (
     try {
       const apolloServer = apolloServerManager.apolloServer;
       if (apolloServer) {
-        operationResult = await apolloServer.executeOperation({
+        operationResult = await apolloServerManager.executeOperation({
           query: parsedQuery,
           variables,
           operationName,
-          http: {
-            url: '',
-            method: '',
-            headers: new Headers(),
-          },
         });
       }
-      delete operationResult.http;
-      delete operationResult.extensions;
     } catch (error) {
       res.status(500);
       res.send({

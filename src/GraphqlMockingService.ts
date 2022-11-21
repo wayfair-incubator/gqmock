@@ -22,8 +22,11 @@ export default class GraphqlMockingService {
     await this.server.stop();
   }
 
-  async registerSchema(schema: string): Promise<void> {
-    await this.server.registerSchema(schema, {subgraph: this.subgraph});
+  async registerSchema(schema: string, {fakerConfig = {}} = {}): Promise<void> {
+    await this.server.registerSchema(schema, {
+      subgraph: this.subgraph,
+      fakerConfig,
+    });
   }
 
   createContext(sequenceId?: string): GraphqlMockingContext {

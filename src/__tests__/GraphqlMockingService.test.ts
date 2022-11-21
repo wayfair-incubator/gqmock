@@ -132,12 +132,12 @@ describe('GraphqlMockingService', () => {
   const sequenceId = 'test-sequence-id';
   const consoleLogOrig = console.log;
   const consoleInfoOrig = console.info;
+
   beforeAll(async () => {
     console.log = jest.fn();
     console.info = jest.fn();
     mockingService = new GraphqlMockingService({port});
     await mockingService.start();
-    await mockingService.registerSchema(schema);
 
     subgraphMockingService = new GraphqlMockingService({
       port: subgraphPort,
@@ -154,569 +154,539 @@ describe('GraphqlMockingService', () => {
     await subgraphMockingService.stop();
   });
 
-  it('should allow operation seed registration', async () => {
-    const mockingContext = mockingService.createContext();
-    const operationName = 'productByName';
-    await mockingContext.operation(
-      operationName,
-      {
-        data: {
-          productByName: {
-            name: 'Flagship Desk',
-            variants: {
-              name: 'office desk',
-              tags: {value: 'adjustable', $length: 3},
-              $length: 3,
+  describe('without fakerConfig', function () {
+    beforeEach(async () => {
+      await mockingService.registerSchema(schema);
+    });
+
+    it('should allow operation seed registration', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'productByName';
+      await mockingContext.operation(
+        operationName,
+        {
+          data: {
+            productByName: {
+              name: 'Flagship Desk',
+              variants: {
+                name: 'office desk',
+                tags: {value: 'adjustable', $length: 3},
+                $length: 3,
+              },
             },
           },
         },
-      },
-      {name: 'desk'}
-    );
+        {name: 'desk'}
+      );
 
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query:
-          'query productByName($name: String!) { productByName(name: $name) { name, dimensions { length, width, height }, variants { name } } }',
-        variables: {name: 'desk'},
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
-
-    expect(operationResult).toEqual({
-      data: {
-        productByName: expect.objectContaining({
-          name: 'Flagship Desk',
-          variants: [
-            {
-              name: 'office desk',
-            },
-            {
-              name: 'office desk',
-            },
-            {
-              name: 'office desk',
-            },
-          ],
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productByName($name: String!) { productByName(name: $name) { name, dimensions { length, width, height }, variants { name } } }',
+          variables: {name: 'desk'},
         }),
-      },
-      warnings: [
-        'Skipping "data.productByName.variants.tags": key not found in source.',
-      ],
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
+
+      expect(operationResult).toEqual({
+        data: {
+          productByName: expect.objectContaining({
+            name: 'Flagship Desk',
+            variants: [
+              {
+                name: 'office desk',
+              },
+              {
+                name: 'office desk',
+              },
+              {
+                name: 'office desk',
+              },
+            ],
+          }),
+        },
+        warnings: [
+          'Skipping "data.productByName.variants.tags": key not found in source.',
+        ],
+      });
     });
-  });
 
-  it('should allow network error registration', async () => {
-    const operationName = 'productBySku';
-    const networkErrorMessage = {message: 'this will cause a network error'};
-    const mockingContext = mockingService.createContext();
-    await mockingContext.networkError(operationName, networkErrorMessage, {
-      sku: 'network error',
-    });
+    it('should allow network error registration', async () => {
+      const operationName = 'productBySku';
+      const networkErrorMessage = {message: 'this will cause a network error'};
+      const mockingContext = mockingService.createContext();
+      await mockingContext.networkError(operationName, networkErrorMessage, {
+        sku: 'network error',
+      });
 
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query:
-          'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
-        variables: {sku: 'network error'},
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
-
-    expect(operationResult).toEqual({data: networkErrorMessage});
-  });
-
-  it('should return unmerged mock if no seeds are found', async () => {
-    const operationName = 'productBySku';
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query:
-          'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
-        variables: {sku: 'random sku'},
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': sequenceId,
-      },
-    }).then((res) => res.json());
-
-    expect(operationResult).toEqual({
-      data: {
-        productBySku: expect.objectContaining({
-          name: 'Hello World',
-          variants: [
-            {
-              name: 'Hello World',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-            {
-              name: 'Hello World',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-          ],
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'network error'},
         }),
-      },
-    });
-  });
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
 
-  it('should return correct errors from the seed and hide data from mock', async () => {
-    const operationName = 'productBySku';
-    const mockingContext = mockingService.createContext();
-    await mockingContext.operation(
-      'productBySku',
-      {
+      expect(operationResult).toEqual({data: networkErrorMessage});
+    });
+
+    it('should return unmerged mock if no seeds are found', async () => {
+      const operationName = 'productBySku';
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'random sku'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': sequenceId,
+        },
+      }).then((res) => res.json());
+
+      expect(operationResult).toEqual({
+        data: {
+          productBySku: expect.objectContaining({
+            name: 'Hello World',
+            variants: [
+              {
+                name: 'Hello World',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+              {
+                name: 'Hello World',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      });
+    });
+
+    it('should return correct errors from the seed and hide data from mock', async () => {
+      const operationName = 'productBySku';
+      const mockingContext = mockingService.createContext();
+      await mockingContext.operation(
+        'productBySku',
+        {
+          data: {
+            productBySku: null,
+          },
+          errors: ['No product found for the given sku'],
+        },
+        {sku: 'invalid sku'}
+      );
+
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'invalid sku'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
+
+      expect(operationResult).toEqual({
         data: {
           productBySku: null,
         },
         errors: ['No product found for the given sku'],
-      },
-      {sku: 'invalid sku'}
-    );
+      });
+    });
 
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
+    it('should discard seeds after being used the number of times passed during registration', async () => {
+      const operationName = 'productBySku';
+      const operationArguments = {sku: 'abc'};
+      const firstMock = {
+        data: {
+          productBySku: {
+            name: 'Flagship Desk',
+            variants: {
+              name: 'office',
+              $length: 3,
+            },
+          },
+        },
+      };
+
+      const secondMock = {
+        data: {
+          productBySku: null,
+        },
+        errors: ['No product found for the given sku'],
+      };
+
+      const mockingContext = mockingService.createContext();
+      await mockingContext.operation(
         operationName,
-        query:
-          'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
-        variables: {sku: 'invalid sku'},
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
+        firstMock,
+        operationArguments,
+        {usesLeft: 2}
+      );
 
-    expect(operationResult).toEqual({
-      data: {
-        productBySku: null,
-      },
-      errors: ['No product found for the given sku'],
-    });
-  });
+      await mockingContext.operation(
+        operationName,
+        secondMock,
+        operationArguments
+      );
 
-  it('should discard seeds after being used the number of times passed during registration', async () => {
-    const operationName = 'productBySku';
-    const operationArguments = {sku: 'abc'};
-    const firstMock = {
-      data: {
-        productBySku: {
-          name: 'Flagship Desk',
-          variants: {
-            name: 'office',
-            $length: 3,
+      const query =
+        'query productBySku($sku: String!) { productBySku(sku: $sku) { name, variants { name, tags { value } } } }';
+      const variables = operationArguments;
+
+      const firstOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+      const secondOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+      const thirdOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+
+      expect(firstOperationResult).toEqual({
+        data: {
+          productBySku: {
+            name: 'Flagship Desk',
+            variants: [
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+            ],
           },
         },
-      },
-    };
+      });
 
-    const secondMock = {
-      data: {
-        productBySku: null,
-      },
-      errors: ['No product found for the given sku'],
-    };
-
-    const mockingContext = mockingService.createContext();
-    await mockingContext.operation(
-      operationName,
-      firstMock,
-      operationArguments,
-      {usesLeft: 2}
-    );
-
-    await mockingContext.operation(
-      operationName,
-      secondMock,
-      operationArguments
-    );
-
-    const query =
-      'query productBySku($sku: String!) { productBySku(sku: $sku) { name, variants { name, tags { value } } } }';
-    const variables = operationArguments;
-
-    const firstOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
+      expect(firstOperationResult).toEqual(secondOperationResult);
+      expect(thirdOperationResult).toEqual({
+        data: {
+          productBySku: null,
         },
-      }
-    ).then((res) => res.json());
-    const secondOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
-        },
-      }
-    ).then((res) => res.json());
-    const thirdOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
-        },
-      }
-    ).then((res) => res.json());
-
-    expect(firstOperationResult).toEqual({
-      data: {
-        productBySku: {
-          name: 'Flagship Desk',
-          variants: [
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-          ],
-        },
-      },
+        errors: ['No product found for the given sku'],
+      });
     });
 
-    expect(firstOperationResult).toEqual(secondOperationResult);
-    expect(thirdOperationResult).toEqual({
-      data: {
-        productBySku: null,
-      },
-      errors: ['No product found for the given sku'],
-    });
-  });
-
-  it('should allow chaining multiple registrations together', async () => {
-    const operationName = 'productBySku';
-    const firstOperationArguments = {sku: 'abc'};
-    const secondOperationArguments = {sku: 'def'};
-    const thirdOperationArguments = {sku: 'network error'};
-    const firstMock = {
-      data: {
-        productBySku: {
-          name: 'Flagship Desk',
-          variants: {
-            name: 'office',
-            $length: 3,
+    it('should allow chaining multiple registrations together', async () => {
+      const operationName = 'productBySku';
+      const firstOperationArguments = {sku: 'abc'};
+      const secondOperationArguments = {sku: 'def'};
+      const thirdOperationArguments = {sku: 'network error'};
+      const firstMock = {
+        data: {
+          productBySku: {
+            name: 'Flagship Desk',
+            variants: {
+              name: 'office',
+              $length: 3,
+            },
           },
         },
-      },
-    };
+      };
 
-    const secondMock = {
-      data: {
-        productBySku: null,
-      },
-      errors: ['No product found for the given sku'],
-    };
-
-    const thirdMock = {message: 'this will cause a network error'};
-
-    const mockingContext = mockingService.createContext();
-    await mockingContext
-      .operation(operationName, firstMock, firstOperationArguments, {
-        usesLeft: 2,
-      })
-      .operation(operationName, secondMock, secondOperationArguments)
-      .networkError(operationName, thirdMock, thirdOperationArguments);
-
-    const query =
-      'query productBySku($sku: String!) { productBySku(sku: $sku) { name, variants { name, tags { value } } } }';
-
-    const firstOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables: firstOperationArguments,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
+      const secondMock = {
+        data: {
+          productBySku: null,
         },
-      }
-    ).then((res) => res.json());
-    const secondOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables: secondOperationArguments,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
-        },
-      }
-    ).then((res) => res.json());
-    const thirdOperationResult = await fetch(
-      `http://localhost:${port}/graphql`,
-      {
-        method: 'post',
-        body: JSON.stringify({
-          operationName,
-          query,
-          variables: thirdOperationArguments,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'mocking-sequence-id': mockingContext.sequenceId,
-        },
-      }
-    ).then((res) => res.json());
+        errors: ['No product found for the given sku'],
+      };
 
-    expect(firstOperationResult).toEqual({
-      data: {
-        productBySku: {
-          name: 'Flagship Desk',
-          variants: [
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-            {
-              name: 'office',
-              tags: [
-                {
-                  value: 'Hello World',
-                },
-                {
-                  value: 'Hello World',
-                },
-              ],
-            },
-          ],
+      const thirdMock = {message: 'this will cause a network error'};
+
+      const mockingContext = mockingService.createContext();
+      await mockingContext
+        .operation(operationName, firstMock, firstOperationArguments, {
+          usesLeft: 2,
+        })
+        .operation(operationName, secondMock, secondOperationArguments)
+        .networkError(operationName, thirdMock, thirdOperationArguments);
+
+      const query =
+        'query productBySku($sku: String!) { productBySku(sku: $sku) { name, variants { name, tags { value } } } }';
+
+      const firstOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables: firstOperationArguments,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+      const secondOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables: secondOperationArguments,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+      const thirdOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables: thirdOperationArguments,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+
+      expect(firstOperationResult).toEqual({
+        data: {
+          productBySku: {
+            name: 'Flagship Desk',
+            variants: [
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+              {
+                name: 'office',
+                tags: [
+                  {
+                    value: 'Hello World',
+                  },
+                  {
+                    value: 'Hello World',
+                  },
+                ],
+              },
+            ],
+          },
         },
-      },
+      });
+
+      expect(secondOperationResult).toEqual(secondMock);
+      expect(thirdOperationResult).toEqual({data: thirdMock});
     });
 
-    expect(secondOperationResult).toEqual(secondMock);
-    expect(thirdOperationResult).toEqual({data: thirdMock});
-  });
+    it('should support subgraph schemas', async () => {
+      const mockingContext = subgraphMockingService.createContext();
+      const operationName = 'getEmployee';
+      await mockingContext.operation(
+        operationName,
+        {
+          data: {
+            getRandomEmployee: {
+              name: 'John',
+            },
+          },
+        },
+        {}
+      );
 
-  it('should support subgraph schemas', async () => {
-    const mockingContext = subgraphMockingService.createContext();
-    const operationName = 'getEmployee';
-    await mockingContext.operation(
-      operationName,
-      {
+      const operationResult = await fetch(
+        `http://localhost:${subgraphPort}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query: 'query getEmployee { getRandomEmployee { name } }',
+            variables: {},
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      ).then((res) => res.json());
+
+      expect(operationResult).toEqual({
         data: {
           getRandomEmployee: {
             name: 'John',
           },
         },
-      },
-      {}
-    );
+      });
 
-    const operationResult = await fetch(
-      `http://localhost:${subgraphPort}/graphql`,
-      {
+      await subgraphMockingService.stop();
+    });
+
+    it('should allow creating contexts with a shared sequenceId', function () {
+      const contextA = mockingService.createContext();
+      const contextB = subgraphMockingService.createContext(
+        contextA.sequenceId
+      );
+
+      expect(contextA.sequenceId === contextB.sequenceId);
+    });
+
+    it('handles explicit mocks of a single type on an interface', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'itemQuery';
+      await mockingContext.operation(operationName, {
+        data: {
+          item: {
+            __typename: 'ItemOne',
+            id: 'string',
+            someField1: 'string',
+            subItem1: {
+              __typename: 'SubItemOne',
+              id: 'string',
+              field1: 'string',
+              product: {
+                type: 'productType',
+                name: 'productName',
+              },
+            },
+          },
+        },
+      });
+
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
         method: 'post',
         body: JSON.stringify({
           operationName,
-          query: 'query getEmployee { getRandomEmployee { name } }',
-          variables: {},
+          query:
+            'query itemQuery { item { __typename id ... on ItemOne { someField1 subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}}',
         }),
         headers: {
           'Content-Type': 'application/json',
           'mocking-sequence-id': mockingContext.sequenceId,
         },
-      }
-    ).then((res) => res.json());
+      }).then((res) => res.json());
 
-    expect(operationResult).toEqual({
-      data: {
-        getRandomEmployee: {
-          name: 'John',
-        },
-      },
-    });
-
-    await subgraphMockingService.stop();
-  });
-
-  it('should allow creating contexts with a shared sequenceId', function () {
-    const contextA = mockingService.createContext();
-    const contextB = subgraphMockingService.createContext(contextA.sequenceId);
-
-    expect(contextA.sequenceId === contextB.sequenceId);
-  });
-
-  it('handles explicit mocks of a single type on an interface', async () => {
-    const mockingContext = mockingService.createContext();
-    const operationName = 'itemQuery';
-    await mockingContext.operation(operationName, {
-      data: {
-        item: {
-          __typename: 'ItemOne',
-          id: 'string',
-          someField1: 'string',
-          subItem1: {
-            __typename: 'SubItemOne',
-            id: 'string',
-            field1: 'string',
-            product: {
-              type: 'productType',
-              name: 'productName',
-            },
-          },
-        },
-      },
-    });
-
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query:
-          'query itemQuery { item { __typename id ... on ItemOne { someField1 subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}}',
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
-
-    expect(operationResult).toEqual({
-      data: {
-        item: {
-          __typename: 'ItemOne',
-          id: 'string',
-          someField1: 'string',
-          subItem1: {
-            __typename: 'SubItemOne',
-            id: 'string',
-            field1: 'string',
-            product: {
-              type: 'productType',
-              name: 'productName',
-            },
-          },
-        },
-      },
-    });
-  });
-
-  it('should handle aliases correctly', async () => {
-    const mockingContext = mockingService.createContext();
-    const operationName = 'itemsQuery';
-    await mockingContext.operation(operationName, {
-      data: {
-        homeItems: [
-          {},
-          {},
-          {},
-          {
-            __typename: 'ItemFive',
-            nodeId: 'aliased id field',
-            type: 'home',
-          },
-        ],
-        officeItems: [
-          {},
-          {},
-          {
+      expect(operationResult).toEqual({
+        data: {
+          item: {
             __typename: 'ItemOne',
-            nodeId: 'string',
-            type: 'office',
+            id: 'string',
             someField1: 'string',
-            aliasedSubItem: {
+            subItem1: {
               __typename: 'SubItemOne',
               id: 'string',
               field1: 'string',
@@ -726,105 +696,232 @@ describe('GraphqlMockingService', () => {
               },
             },
           },
-        ],
-      },
+        },
+      });
     });
 
-    const operationResult = await fetch(`http://localhost:${port}/graphql`, {
-      method: 'post',
-      body: JSON.stringify({
-        operationName,
-        query: `fragment commonItemsFields on Item { __typename nodeId: id type ... on ItemOne { someField1 aliasedSubItem: subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}
+    it('should handle aliases correctly', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'itemsQuery';
+      await mockingContext.operation(operationName, {
+        data: {
+          homeItems: [
+            {},
+            {},
+            {},
+            {
+              __typename: 'ItemFive',
+              nodeId: 'aliased id field',
+              type: 'home',
+            },
+          ],
+          officeItems: [
+            {},
+            {},
+            {
+              __typename: 'ItemOne',
+              nodeId: 'string',
+              type: 'office',
+              someField1: 'string',
+              aliasedSubItem: {
+                __typename: 'SubItemOne',
+                id: 'string',
+                field1: 'string',
+                product: {
+                  type: 'productType',
+                  name: 'productName',
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query: `fragment commonItemsFields on Item { __typename nodeId: id type ... on ItemOne { someField1 aliasedSubItem: subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}
 
           query itemsQuery {
     officeItems: items(type: "office") { ...commonItemsFields }
     homeItems: items(type: "home") { ...commonItemsFields }
 }`,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'mocking-sequence-id': mockingContext.sequenceId,
-      },
-    }).then((res) => res.json());
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
 
-    const expectedOperationResult = {
-      data: {
-        homeItems: [
-          {
-            __typename: 'ItemFive',
-            nodeId: 'aliased id field',
-            someField5: 'Hello World',
-            type: 'home',
-          },
-          {
-            __typename: 'ItemFive',
-            nodeId: 'aliased id field',
-            someField5: 'Hello World',
-            type: 'home',
-          },
-          {
-            __typename: 'ItemFive',
-            nodeId: 'aliased id field',
-            someField5: 'Hello World',
-            type: 'home',
-          },
-          {
-            __typename: 'ItemFive',
-            nodeId: 'aliased id field',
-            someField5: 'Hello World',
-            type: 'home',
-          },
-        ],
-        officeItems: [
-          {
-            __typename: 'ItemOne',
-            aliasedSubItem: {
-              __typename: 'SubItemOne',
-              field1: 'string',
-              id: 'string',
-              product: {
-                name: 'productName',
-                type: 'productType',
-              },
+      const expectedOperationResult = {
+        data: {
+          homeItems: [
+            {
+              __typename: 'ItemFive',
+              nodeId: 'aliased id field',
+              someField5: 'Hello World',
+              type: 'home',
             },
-            nodeId: 'string',
-            someField1: 'string',
-            type: 'office',
-          },
-          {
-            __typename: 'ItemOne',
-            aliasedSubItem: {
-              __typename: 'SubItemOne',
-              field1: 'string',
-              id: 'string',
-              product: {
-                name: 'productName',
-                type: 'productType',
-              },
+            {
+              __typename: 'ItemFive',
+              nodeId: 'aliased id field',
+              someField5: 'Hello World',
+              type: 'home',
             },
-            nodeId: 'string',
-            someField1: 'string',
-            type: 'office',
-          },
-          {
-            __typename: 'ItemOne',
-            aliasedSubItem: {
-              __typename: 'SubItemOne',
-              field1: 'string',
-              id: 'string',
-              product: {
-                name: 'productName',
-                type: 'productType',
-              },
+            {
+              __typename: 'ItemFive',
+              nodeId: 'aliased id field',
+              someField5: 'Hello World',
+              type: 'home',
             },
-            nodeId: 'string',
-            someField1: 'string',
-            type: 'office',
-          },
-        ],
+            {
+              __typename: 'ItemFive',
+              nodeId: 'aliased id field',
+              someField5: 'Hello World',
+              type: 'home',
+            },
+          ],
+          officeItems: [
+            {
+              __typename: 'ItemOne',
+              aliasedSubItem: {
+                __typename: 'SubItemOne',
+                field1: 'string',
+                id: 'string',
+                product: {
+                  name: 'productName',
+                  type: 'productType',
+                },
+              },
+              nodeId: 'string',
+              someField1: 'string',
+              type: 'office',
+            },
+            {
+              __typename: 'ItemOne',
+              aliasedSubItem: {
+                __typename: 'SubItemOne',
+                field1: 'string',
+                id: 'string',
+                product: {
+                  name: 'productName',
+                  type: 'productType',
+                },
+              },
+              nodeId: 'string',
+              someField1: 'string',
+              type: 'office',
+            },
+            {
+              __typename: 'ItemOne',
+              aliasedSubItem: {
+                __typename: 'SubItemOne',
+                field1: 'string',
+                id: 'string',
+                product: {
+                  name: 'productName',
+                  type: 'productType',
+                },
+              },
+              nodeId: 'string',
+              someField1: 'string',
+              type: 'office',
+            },
+          ],
+        },
+      };
+
+      expect(operationResult).toEqual(expectedOperationResult);
+    });
+  });
+
+  describe('with fakerConfig', function () {
+    const fakerConfig = {
+      Product: {
+        name: {
+          method: 'commerce.product',
+        },
+      },
+      Dimensions: {
+        length: {
+          method: 'random.numeric',
+          args: 2,
+        },
+        width: {
+          method: 'random.numeric',
+          args: [2],
+        },
+        height: {
+          method: 'random.numeric',
+          args: 3,
+        },
+      },
+      ProductVariant: {
+        name: {
+          method: 'random.words',
+          args: 3,
+        },
       },
     };
 
-    expect(operationResult).toEqual(expectedOperationResult);
+    beforeEach(async () => {
+      await mockingService.registerSchema(schema, {fakerConfig});
+    });
+
+    it('should use the faker config to generate realistic data for unseeded fields', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'productByName';
+      await mockingContext.operation(
+        operationName,
+        {
+          data: {
+            productByName: {
+              name: 'Flagship Desk',
+            },
+          },
+        },
+        {name: 'desk'}
+      );
+
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productByName($name: String!) { productByName(name: $name) { name, dimensions { length, width, height }, variants { name } } }',
+          variables: {name: 'desk'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
+
+      // Check seeded properties
+      expect(operationResult).toEqual({
+        data: {
+          [operationName]: expect.objectContaining({
+            name: 'Flagship Desk',
+          }),
+        },
+      });
+
+      // Check random properties generated by faker
+      expect(
+        operationResult.data[operationName].dimensions.height.toString().length
+      ).toEqual(3);
+      expect(
+        operationResult.data[operationName].dimensions.length.toString().length
+      ).toEqual(2);
+      expect(
+        operationResult.data[operationName].dimensions.width.toString().length
+      ).toEqual(2);
+      expect(operationResult.data[operationName].variants).not.toContainEqual(
+        expect.objectContaining({
+          name: 'Hello World',
+        })
+      );
+    });
   });
 });

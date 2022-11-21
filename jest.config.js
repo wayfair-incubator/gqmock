@@ -6,8 +6,6 @@
 module.exports = {
   // Automatically clear mock calls and instances between every test
   clearMocks: true,
-  // Reset the module registry before running each individual test
-  resetModules: true,
   testPathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/fixtures/',
