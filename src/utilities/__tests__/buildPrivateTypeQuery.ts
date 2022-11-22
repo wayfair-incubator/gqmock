@@ -1,105 +1,14 @@
-import buildUnionTypeQuery from '../buildUnionTypeQuery';
+import buildPrivateTypeQuery from '../buildPrivateTypeQuery';
 import ApolloServerManager from '../../ApolloServerManager';
+import fs from 'fs';
 
-describe('buildUnionTypeQuery', function () {
+const schema = fs.readFileSync(
+  `${__dirname}/../../__fixtures__/schema.graphql`,
+  'utf-8'
+);
+
+describe('buildPrivateTypeQuery', function () {
   let apolloServerManager;
-  const schema = `
-    type Tag {
-        value: String
-    }
-    
-    type Picture {
-        url: String
-    }
-    
-    type ProductVariant {
-        name: String
-        color: String
-        tags: [Tag]
-        pictures: [Picture]
-    }
-    
-    type Dimensions {
-        length: Int
-        width: Int
-        height: Int
-    }
-    
-    type Product {
-        name: String
-        variants: [ProductVariant]
-        dimensions: Dimensions
-    }
-    
-    interface SomeProduct {
-        name: String
-    }
-    
-    type ConcreteProduct implements SomeProduct {
-        name: String
-        type: String
-    }
-    
-    interface SubItem {
-        id: String
-    }
-    
-    type SubItemOne implements SubItem {
-        id: String
-        field1: String
-        product: ConcreteProduct
-    }
-    
-    type SubItemTwo implements SubItem {
-        id: String
-        field2: String
-    }
-    
-    type SubItemThree implements SubItem {
-        id: String
-        field3: String
-    }
-    
-    interface Item {
-        id: String
-    }
-    
-    type ItemOne implements Item {
-        id: String
-        someField1: String
-        subItem1: SubItem
-    }
-    
-    type ItemTwo implements Item {
-        id: String
-        someField2: String
-        subItem2: SubItem
-    }
-    
-    type ItemThree implements Item {
-        id: String
-        someField3: String
-        subItem3: SubItem
-    }
-    
-    type ItemFour implements Item {
-        id: String
-        someField4: String
-    }
-    
-    type ItemFive implements Item {
-        id: String
-        someField5: String
-    }
-    
-    type Query {
-        products: [Product]
-        productByName(name: String!): Product
-        productBySku(sku: String!): Product
-        item: Item
-    }
-  `;
-
   beforeAll(() => {
     apolloServerManager = new ApolloServerManager();
     apolloServerManager.createApolloServer(schema, {});
@@ -124,6 +33,9 @@ describe('buildUnionTypeQuery', function () {
                     ... on SubItemThree {
                         field3
                     }
+                }
+                products {
+                  name
                 }
             }
             ... on ItemTwo {
@@ -159,11 +71,14 @@ describe('buildUnionTypeQuery', function () {
         field3
       }
     }
+    products {
+      name
+    }
   }
 }`;
 
     expect(
-      buildUnionTypeQuery({
+      buildPrivateTypeQuery({
         query,
         typeName: 'ItemOne',
         operationName: 'itemQuery',
@@ -219,7 +134,7 @@ describe('buildUnionTypeQuery', function () {
 }`;
 
     expect(
-      buildUnionTypeQuery({
+      buildPrivateTypeQuery({
         query,
         typeName: 'SubItemOne',
         operationName: 'itemQuery',
@@ -227,5 +142,38 @@ describe('buildUnionTypeQuery', function () {
         apolloServerManager,
       })
     ).toBe(expectedQuery);
+  });
+
+  it('should work', function () {
+    const rollingKey = 'data.productByName.variants';
+    const query = `
+      query productByName($name: String!) {
+        productByName(name: $name) {
+          name
+          dimensions {
+            length
+            width
+            height
+          }
+          variants {
+            name
+          }
+        }
+      }
+    `;
+
+    expect(
+      buildPrivateTypeQuery({
+        query,
+        typeName: 'ProductVariant',
+        operationName: 'productByName',
+        rollingKey,
+        apolloServerManager,
+      })
+    ).toBe(`query gqmock_privateQuery {
+  gqmock_ProductVariant {
+    name
+  }
+}`);
   });
 });

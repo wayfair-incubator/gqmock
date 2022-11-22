@@ -2,71 +2,110 @@ import deepMerge from '../deepMerge';
 import ApolloServerManager from '../../ApolloServerManager';
 
 const schemaSource = `
-    interface Product {
-        name: String
-    }
-    
-    type ConcreteProduct implements Product {
-        name: String
-        type: String
-    }
-    
-    interface Item {
-        id: String
-    }
-    
-    interface SubItem {
-        id: String
-    }
-    
-    type SubItemOne implements SubItem {
-        id: String
-        field1: String
-        product: ConcreteProduct
-    }
-    
-    type SubItemTwo implements SubItem {
-        id: String
-        field2: String
-    }
-    
-    type SubItemThree implements SubItem {
-        id: String
-        field3: String
-    }
-    
-    type ItemOne implements Item {
-        id: String
-        someField1: String
-        subItem1: SubItem
-    }
-    
-    type ItemTwo implements Item {
-        id: String
-        someField2: String
-        subItem2: SubItem
-    }
-    
-    type ItemThree implements Item {
-        id: String
-        someField3: String
-        subItem3: SubItem
-    }
-    
-    type ItemFour implements Item {
-        id: String
-        someField4: String
-    }
-    
-    type ItemFive implements Item {
-        id: String
-        someField5: String
-    }
-    
-    type Query {
-        product: Product
-        item: Item
-    }
+type Tag {
+    value: String
+}
+
+type Picture {
+    url: String
+}
+
+type ProductVariant {
+    name: String
+    color: String
+    tags: [Tag]
+    pictures: [Picture]
+}
+
+type Dimensions {
+    length: Int
+    width: Int
+    height: Int
+}
+
+type Product {
+    name: String
+    variants: [ProductVariant]
+    dimensions: Dimensions
+}
+
+interface SomeProduct {
+    name: String
+}
+
+type ConcreteProduct implements SomeProduct {
+    name: String
+    type: String
+}
+
+interface SubItem {
+    id: String
+}
+
+type SubItemOne implements SubItem {
+    id: String
+    field1: String
+    product: ConcreteProduct
+}
+
+type SubItemTwo implements SubItem {
+    id: String
+    field2: String
+}
+
+type SubItemThree implements SubItem {
+    id: String
+    field3: String
+}
+
+interface Item {
+    id: String
+    type: String
+}
+
+type ItemOne implements Item {
+    id: String
+    type: String
+    someField1: String
+    subItem1: SubItem
+    subItems: [SubItem]
+    products: [Product]
+}
+
+type ItemTwo implements Item {
+    id: String
+    type: String
+    someField2: String
+    subItem2: SubItem
+}
+
+type ItemThree implements Item {
+    id: String
+    type: String
+    someField3: String
+    subItem3: SubItem
+}
+
+type ItemFour implements Item {
+    id: String
+    type: String
+    someField4: String
+}
+
+type ItemFive implements Item {
+    id: String
+    type: String
+    someField5: String
+}
+
+type Query {
+    product: Product
+    products: [Product]
+    productByName(name: String!): Product
+    productBySku(sku: String!): Product
+    item: Item
+    items(type: String): [Item]
+}
     
     enum SomeEnum {
         ONE
@@ -283,13 +322,13 @@ describe('deepMerge', () => {
           name: 'Flagship Desk',
           variants: [
             {
-              name: 'office desk',
+              name: 'Hello World',
             },
             {
-              name: 'office desk',
+              name: 'Hello World',
             },
             {
-              name: 'office desk',
+              name: 'Hello World',
             },
             {
               name: 'office desk',
@@ -299,7 +338,24 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const operationName = 'getProduct';
+    const query = `
+      query ${operationName} {
+        product {
+          name
+          variants {
+            name
+          }
+        }
+      }
+    `;
+
+    const mergeResult = await deepMerge(source, seed, {
+      query,
+      operationName,
+      apolloServerManager,
+      augmentQuery: true,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -413,16 +469,35 @@ describe('deepMerge', () => {
           name: 'Flagship Desk',
           variants: [
             {
-              name: 'office desk',
+              name: 'Hello World',
               tags: [
                 {
-                  value: 'adjustable',
+                  value: 'Hello World',
                 },
                 {
-                  value: 'adjustable',
+                  value: 'Hello World',
+                },
+              ],
+            },
+            {
+              name: 'Hello World',
+              tags: [
+                {
+                  value: 'Hello World',
                 },
                 {
-                  value: 'adjustable',
+                  value: 'Hello World',
+                },
+              ],
+            },
+            {
+              name: 'Hello World',
+              tags: [
+                {
+                  value: 'Hello World',
+                },
+                {
+                  value: 'Hello World',
                 },
               ],
             },
@@ -430,38 +505,10 @@ describe('deepMerge', () => {
               name: 'office desk',
               tags: [
                 {
-                  value: 'adjustable',
+                  value: 'Hello World',
                 },
                 {
-                  value: 'adjustable',
-                },
-                {
-                  value: 'adjustable',
-                },
-              ],
-            },
-            {
-              name: 'office desk',
-              tags: [
-                {
-                  value: 'adjustable',
-                },
-                {
-                  value: 'adjustable',
-                },
-                {
-                  value: 'adjustable',
-                },
-              ],
-            },
-            {
-              name: 'office desk',
-              tags: [
-                {
-                  value: 'adjustable',
-                },
-                {
-                  value: 'adjustable',
+                  value: 'Hello World',
                 },
                 {
                   value: 'adjustable',
@@ -473,7 +520,27 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const operationName = 'getProduct';
+    const query = `
+      query ${operationName} {
+        product {
+          name
+          variants {
+            name
+            tags {
+                value
+            }
+          }
+        }
+      }
+    `;
+
+    const mergeResult = await deepMerge(source, seed, {
+      query,
+      operationName,
+      apolloServerManager,
+      augmentQuery: true,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -627,13 +694,13 @@ describe('deepMerge', () => {
           name: 'Flagship Desk',
           variants: [
             {
-              name: 'office desk',
+              name: 'Hello World',
             },
             {
               name: 'coffee table',
             },
             {
-              name: 'office desk',
+              name: 'Hello World',
             },
             {
               name: 'office desk',
@@ -643,7 +710,24 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const operationName = 'getProduct';
+    const query = `
+      query ${operationName} {
+        product {
+          name
+          variants {
+            name
+          }
+        }
+      }
+    `;
+
+    const mergeResult = await deepMerge(source, seed, {
+      query,
+      operationName,
+      apolloServerManager,
+      augmentQuery: true,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -754,10 +838,27 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'getProduct';
+    const query = `
+      query ${operationName} {
+        product {
+          name
+          variants {
+            name
+          }
+        }
+      }
+    `;
+
     const mergeResult = await deepMerge(
       source,
       seed,
-      {},
+      {
+        query,
+        operationName,
+        apolloServerManager,
+        augmentQuery: true,
+      },
       {
         metaPropertyPrefix: '$_$',
       }
@@ -926,7 +1027,7 @@ describe('deepMerge', () => {
       data: {
         product: {
           name: 'Flagship Desk',
-          variants: ['yes', 'yes', 'yes', 'yes'],
+          variants: ['', '', '', 'yes'],
         },
       },
     };

@@ -23,9 +23,8 @@ const graphqlRoutes = (
       return;
     }
 
-    let parsedQuery;
     try {
-      parsedQuery = parse(query);
+      parse(query);
     } catch (error) {
       GraphqlMockingContextLogger.error(
         `Invalid GraphQL Query: ${(error as Error).message}`,
@@ -39,12 +38,14 @@ const graphqlRoutes = (
       return;
     }
 
+    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(query);
+
     let operationResult;
     try {
       const apolloServer = apolloServerManager.apolloServer;
       if (apolloServer) {
         operationResult = await apolloServerManager.executeOperation({
-          query: parsedQuery,
+          query: typenamedQuery,
           variables,
           operationName,
         });

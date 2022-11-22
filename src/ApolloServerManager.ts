@@ -8,9 +8,10 @@ import {
   ObjectTypeExtensionNode,
   Kind,
   buildASTSchema,
+  print,
 } from 'graphql';
 import {DocumentNode} from 'graphql/language/ast';
-import buildUnionTypeQuery from './utilities/buildUnionTypeQuery';
+import buildPrivateTypeQuery from './utilities/buildPrivateTypeQuery';
 import {addMocksToSchema} from '@graphql-tools/mock';
 import {faker} from '@faker-js/faker';
 
@@ -152,7 +153,7 @@ export default class ApolloServerManager {
     operationName: string;
     rollingKey: string;
   }): Promise<Record<string, unknown>> {
-    const newQuery = buildUnionTypeQuery({
+    const newQuery = buildPrivateTypeQuery({
       query,
       typeName,
       operationName,
@@ -188,8 +189,11 @@ export default class ApolloServerManager {
       .then((response) => response.body)
       .then((body) => {
         if (body.kind === 'single') {
+          if (!body.singleResult.errors) {
+            delete body.singleResult.errors;
+          }
           return body.singleResult;
-        } else if (body.kind === 'incremental') {
+        } else {
           return {
             initialResult: body.initialResult,
             subsequentResults: body.subsequentResults,
@@ -198,5 +202,48 @@ export default class ApolloServerManager {
       }) as Promise<{
       data: Record<string, object>;
     }>;
+  }
+
+  addTypenameFieldsToQuery(query: string): string {
+    const newQuery = visit(parse(query), {
+      SelectionSet: (node) => {
+        if (
+          !node.selections.find((selection) => {
+            if ('name' in selection) {
+              return selection.name.value === '__typename';
+            }
+
+            return false;
+          })
+        ) {
+          node.selections = [
+            ...node.selections,
+            {
+              kind: Kind.FIELD,
+              alias: {
+                kind: Kind.NAME,
+                value: this.getFieldName('typename'),
+              },
+              name: {
+                kind: Kind.NAME,
+                value: '__typename',
+              },
+            },
+          ];
+        }
+        return node;
+      },
+    });
+
+    return print(newQuery);
+  }
+
+  deletePrivateTypenameFields(obj: Record<string, object>): void {
+    Object.keys(obj).forEach((key) => {
+      delete obj[this.getFieldName('typename')];
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        this.deletePrivateTypenameFields(obj[key] as Record<string, object>);
+      }
+    });
   }
 }

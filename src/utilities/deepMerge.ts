@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import escapeStringRegexp from 'escape-string-regexp';
 import ApolloServerManager from '../ApolloServerManager';
+import buildPrivateTypeQuery from './buildPrivateTypeQuery';
 
 /**
  * Append key to a path
@@ -45,8 +46,10 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {object} seed - Object to be merged into source
  * @param {object} graphqlContext - Properties required for making supplemental GraphQL queries
  * @param {string} graphqlContext.query - Original GraphQL query
+ * @param {object} graphqlContext.variables - GraphQL query variables
  * @param {string} graphqlContext.operationName - GraphQL operation name
  * @param {ApolloServerManager} graphqlContext.apolloServerManager - ApolloServerManager instance
+ * @param {boolean} graphqlContext.augmentQuery - Flag to add private typenames to all selection sets
  * @param {object} options - Merge options
  * @returns {object} A merged object and a list of warnings
  */
@@ -55,15 +58,18 @@ async function deepMerge(
   seed: Record<string, unknown>,
   graphqlContext: {
     query: string;
+    variables: undefined | Record<string, unknown>;
     operationName: string;
     apolloServerManager: ApolloServerManager;
+    augmentQuery: boolean;
   },
   options = {}
 ): Promise<{
   data: Record<string, unknown>;
   warnings: string[];
 }> {
-  const {query, operationName, apolloServerManager} = graphqlContext;
+  const {query, variables, operationName, apolloServerManager, augmentQuery} =
+    graphqlContext;
   const warnings = new Set<string>();
   /**
    * Returns the result of merging target into source
@@ -92,6 +98,7 @@ async function deepMerge(
         rollingKey,
       });
     }
+
     for (const [targetKey, targetValue] of Object.entries(target)) {
       const newRollingKey = buildRollingKey(rollingKey, targetKey);
       if (source[targetKey]) {
@@ -119,38 +126,51 @@ async function deepMerge(
             shorthandOverrides
           )) {
             source[targetKey][index] = await merge(
-              {...source[targetKey][index]},
+              cloneDeep(source[targetKey][index]),
               overrideValue,
               {rollingKey: newRollingKey, metaPropertyPrefix}
             );
           }
         } else if (Array.isArray(targetValue)) {
-          const lastTargetArrayItem = targetValue[targetValue.length - 1];
           const sourceItem = source[targetKey][0];
           if (Array.isArray(source[targetKey])) {
             source[targetKey] = [];
             for (const item of targetValue) {
-              if (Object.entries(item).length) {
-                if (item instanceof Object) {
-                  source[targetKey].push(
-                    await merge({...sourceItem}, item, {
-                      rollingKey: newRollingKey,
-                      metaPropertyPrefix,
-                    })
-                  );
-                } else {
-                  source[targetKey].push(item);
-                }
+              if (!(item instanceof Object)) {
+                source[targetKey].push(item);
               } else {
-                if (lastTargetArrayItem instanceof Object) {
+                // build a new query to fetch an array item at path
+                // this should happen regardless of overrides
+                const newSourceItemTypename =
+                  sourceItem.__typename ||
+                  sourceItem[apolloServerManager.getFieldName('typename')];
+                const newSourceItemQuery = buildPrivateTypeQuery({
+                  query: apolloServerManager.addTypenameFieldsToQuery(query),
+                  typeName: newSourceItemTypename,
+                  operationName,
+                  rollingKey: newRollingKey,
+                  apolloServerManager,
+                });
+                const newSourceItem =
+                  await apolloServerManager.executeOperation({
+                    query: newSourceItemQuery,
+                    variables: {},
+                    operationName:
+                      apolloServerManager.getFieldName('privateQuery'),
+                  });
+                const newSourceItemData =
+                  newSourceItem.data[
+                    apolloServerManager.getFieldName(newSourceItemTypename)
+                  ];
+                if (Object.entries(item).length) {
                   source[targetKey].push(
-                    await merge(sourceItem, lastTargetArrayItem, {
+                    await merge(cloneDeep(newSourceItemData), item, {
                       rollingKey: newRollingKey,
                       metaPropertyPrefix,
                     })
                   );
                 } else {
-                  source[targetKey].push(lastTargetArrayItem);
+                  source[targetKey].push(newSourceItemData);
                 }
               }
             }
@@ -185,7 +205,21 @@ async function deepMerge(
     return source;
   }
 
-  const data = await merge(cloneDeep(source), seed, options);
+  let data;
+  if (augmentQuery) {
+    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(query);
+    const newSource = await apolloServerManager.executeOperation({
+      query: typenamedQuery,
+      variables: variables || {},
+      operationName,
+    });
+
+    data = await merge(cloneDeep(newSource), seed, options);
+  } else {
+    data = await merge(cloneDeep(source), seed, options);
+  }
+
+  apolloServerManager.deletePrivateTypenameFields(data);
 
   return {
     data,

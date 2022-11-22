@@ -1,109 +1,11 @@
+import fs from 'fs';
 import fetch from 'node-fetch';
 import GraphqlMockingService from '../GraphqlMockingService';
 
-const schema = `
-    type Tag {
-        value: String
-    }
-    
-    type Picture {
-        url: String
-    }
-    
-    type ProductVariant {
-        name: String
-        color: String
-        tags: [Tag]
-        pictures: [Picture]
-    }
-    
-    type Dimensions {
-        length: Int
-        width: Int
-        height: Int
-    }
-    
-    type Product {
-        name: String
-        variants: [ProductVariant]
-        dimensions: Dimensions
-    }
-    
-    interface SomeProduct {
-        name: String
-    }
-    
-    type ConcreteProduct implements SomeProduct {
-        name: String
-        type: String
-    }
-    
-    interface SubItem {
-        id: String
-    }
-    
-    type SubItemOne implements SubItem {
-        id: String
-        field1: String
-        product: ConcreteProduct
-    }
-    
-    type SubItemTwo implements SubItem {
-        id: String
-        field2: String
-    }
-    
-    type SubItemThree implements SubItem {
-        id: String
-        field3: String
-    }
-    
-    interface Item {
-        id: String
-        type: String
-    }
-    
-    type ItemOne implements Item {
-        id: String
-        type: String
-        someField1: String
-        subItem1: SubItem
-    }
-    
-    type ItemTwo implements Item {
-        id: String
-        type: String
-        someField2: String
-        subItem2: SubItem
-    }
-    
-    type ItemThree implements Item {
-        id: String
-        type: String
-        someField3: String
-        subItem3: SubItem
-    }
-    
-    type ItemFour implements Item {
-        id: String
-        type: String
-        someField4: String
-    }
-    
-    type ItemFive implements Item {
-        id: String
-        type: String
-        someField5: String
-    }
-    
-    type Query {
-        products: [Product]
-        productByName(name: String!): Product
-        productBySku(sku: String!): Product
-        item: Item
-        items(type: String): [Item]
-    }
-`;
+const schema = fs.readFileSync(
+  `${__dirname}/../__fixtures__/schema.graphql`,
+  'utf-8'
+);
 
 const subgraphSchema = `
       type Query {
@@ -754,85 +656,79 @@ describe('GraphqlMockingService', () => {
         },
       }).then((res) => res.json());
 
-      const expectedOperationResult = {
+      expect(operationResult.data.homeItems).toContainEqual({
+        __typename: 'ItemFive',
+        nodeId: 'aliased id field',
+        someField5: 'Hello World',
+        type: 'home',
+      });
+      expect(operationResult.data.officeItems).toContainEqual({
+        __typename: 'ItemOne',
+        aliasedSubItem: {
+          __typename: 'SubItemOne',
+          field1: 'string',
+          id: 'string',
+          product: {
+            name: 'productName',
+            type: 'productType',
+          },
+        },
+        nodeId: 'string',
+        someField1: 'string',
+        type: 'office',
+      });
+    });
+
+    it('should mock nested interfaces and arrays correctly', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'itemQuery';
+      const seed = {
         data: {
-          homeItems: [
-            {
-              __typename: 'ItemFive',
-              nodeId: 'aliased id field',
-              someField5: 'Hello World',
-              type: 'home',
-            },
-            {
-              __typename: 'ItemFive',
-              nodeId: 'aliased id field',
-              someField5: 'Hello World',
-              type: 'home',
-            },
-            {
-              __typename: 'ItemFive',
-              nodeId: 'aliased id field',
-              someField5: 'Hello World',
-              type: 'home',
-            },
-            {
-              __typename: 'ItemFive',
-              nodeId: 'aliased id field',
-              someField5: 'Hello World',
-              type: 'home',
-            },
-          ],
-          officeItems: [
-            {
-              __typename: 'ItemOne',
-              aliasedSubItem: {
+          item: {
+            __typename: 'ItemOne',
+            id: 'string',
+            someField1: 'string',
+            subItems: [
+              {
                 __typename: 'SubItemOne',
-                field1: 'string',
                 id: 'string',
+                field1: 'string',
                 product: {
-                  name: 'productName',
                   type: 'productType',
+                  name: 'productName',
                 },
               },
-              nodeId: 'string',
-              someField1: 'string',
-              type: 'office',
-            },
-            {
-              __typename: 'ItemOne',
-              aliasedSubItem: {
-                __typename: 'SubItemOne',
-                field1: 'string',
-                id: 'string',
-                product: {
-                  name: 'productName',
-                  type: 'productType',
-                },
+              {
+                __typename: 'SubItemTwo',
+                id: 'subTwoId',
+                field2: 'field2',
               },
-              nodeId: 'string',
-              someField1: 'string',
-              type: 'office',
-            },
-            {
-              __typename: 'ItemOne',
-              aliasedSubItem: {
-                __typename: 'SubItemOne',
-                field1: 'string',
-                id: 'string',
-                product: {
-                  name: 'productName',
-                  type: 'productType',
-                },
+              {
+                __typename: 'SubItemThree',
+                id: 'subThreeId',
+                field3: 'field3',
               },
-              nodeId: 'string',
-              someField1: 'string',
-              type: 'office',
-            },
-          ],
+            ],
+          },
         },
       };
 
-      expect(operationResult).toEqual(expectedOperationResult);
+      await mockingContext.operation(operationName, seed);
+
+      const operationResult = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query itemQuery { item { __typename id ... on ItemOne { someField1 subItems { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}}',
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      }).then((res) => res.json());
+
+      expect(operationResult).toEqual(seed);
     });
   });
 

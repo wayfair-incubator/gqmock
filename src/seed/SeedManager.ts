@@ -212,7 +212,13 @@ export default class SeedManager {
           const seededMock = await deepMerge(
             {data: operationMock.data || null},
             {data: validSeed.operationSeedResponse.data || {}},
-            {apolloServerManager, query, operationName}
+            {
+              apolloServerManager,
+              variables,
+              query,
+              operationName,
+              augmentQuery: false,
+            }
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
           return {
@@ -228,6 +234,7 @@ export default class SeedManager {
       }
     }
 
+    apolloServerManager.deletePrivateTypenameFields(operationMock);
     return operationMock;
   }
 }
