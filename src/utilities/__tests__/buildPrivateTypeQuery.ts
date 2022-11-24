@@ -63,18 +63,23 @@ describe('buildPrivateTypeQuery', function () {
       id
       ... on SubItemOne {
         field1
+        __typename
       }
       ... on SubItemTwo {
         field2
+        __typename
       }
       ... on SubItemThree {
         field3
+        __typename
       }
     }
     products {
       name
+      __typename
     }
   }
+  __typename
 }`;
 
     expect(
@@ -131,6 +136,7 @@ describe('buildPrivateTypeQuery', function () {
     id
     field1
   }
+  __typename
 }`;
 
     expect(
@@ -144,7 +150,7 @@ describe('buildPrivateTypeQuery', function () {
     ).toBe(expectedQuery);
   });
 
-  it('should work', function () {
+  it('should build a query for type without interfaces', function () {
     const rollingKey = 'data.productByName.variants';
     const query = `
       query productByName($name: String!) {
@@ -173,7 +179,9 @@ describe('buildPrivateTypeQuery', function () {
     ).toBe(`query gqmock_privateQuery {
   gqmock_ProductVariant {
     name
+    __typename
   }
+  __typename
 }`);
   });
 });

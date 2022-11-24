@@ -220,10 +220,6 @@ export default class ApolloServerManager {
             ...node.selections,
             {
               kind: Kind.FIELD,
-              alias: {
-                kind: Kind.NAME,
-                value: this.getFieldName('typename'),
-              },
               name: {
                 kind: Kind.NAME,
                 value: '__typename',
@@ -236,14 +232,5 @@ export default class ApolloServerManager {
     });
 
     return print(newQuery);
-  }
-
-  deletePrivateTypenameFields(obj: Record<string, object>): void {
-    Object.keys(obj).forEach((key) => {
-      delete obj[this.getFieldName('typename')];
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        this.deletePrivateTypenameFields(obj[key] as Record<string, object>);
-      }
-    });
   }
 }

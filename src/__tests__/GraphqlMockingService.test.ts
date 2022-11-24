@@ -97,16 +97,21 @@ describe('GraphqlMockingService', () => {
 
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           productByName: expect.objectContaining({
+            __typename: 'Product',
             name: 'Flagship Desk',
             variants: [
               {
+                __typename: 'ProductVariant',
                 name: 'office desk',
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office desk',
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office desk',
               },
             ],
@@ -161,27 +166,35 @@ describe('GraphqlMockingService', () => {
 
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           productBySku: expect.objectContaining({
+            __typename: 'Product',
             name: 'Hello World',
             variants: [
               {
+                __typename: 'ProductVariant',
                 name: 'Hello World',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
               },
               {
+                __typename: 'ProductVariant',
                 name: 'Hello World',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
@@ -199,6 +212,7 @@ describe('GraphqlMockingService', () => {
         'productBySku',
         {
           data: {
+            __typename: 'Query',
             productBySku: null,
           },
           errors: ['No product found for the given sku'],
@@ -222,6 +236,7 @@ describe('GraphqlMockingService', () => {
 
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           productBySku: null,
         },
         errors: ['No product found for the given sku'],
@@ -316,38 +331,49 @@ describe('GraphqlMockingService', () => {
 
       expect(firstOperationResult).toEqual({
         data: {
+          __typename: 'Query',
           productBySku: {
+            __typename: 'Product',
             name: 'Flagship Desk',
             variants: [
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
@@ -360,6 +386,7 @@ describe('GraphqlMockingService', () => {
       expect(firstOperationResult).toEqual(secondOperationResult);
       expect(thirdOperationResult).toEqual({
         data: {
+          __typename: 'Query',
           productBySku: null,
         },
         errors: ['No product found for the given sku'],
@@ -385,6 +412,7 @@ describe('GraphqlMockingService', () => {
 
       const secondMock = {
         data: {
+          __typename: 'Query',
           productBySku: null,
         },
         errors: ['No product found for the given sku'],
@@ -451,38 +479,49 @@ describe('GraphqlMockingService', () => {
 
       expect(firstOperationResult).toEqual({
         data: {
+          __typename: 'Query',
           productBySku: {
+            __typename: 'Product',
             name: 'Flagship Desk',
             variants: [
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
               },
               {
+                __typename: 'ProductVariant',
                 name: 'office',
                 tags: [
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                   {
+                    __typename: 'Tag',
                     value: 'Hello World',
                   },
                 ],
@@ -529,7 +568,9 @@ describe('GraphqlMockingService', () => {
 
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           getRandomEmployee: {
+            __typename: 'Employee',
             name: 'John',
           },
         },
@@ -584,6 +625,7 @@ describe('GraphqlMockingService', () => {
 
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           item: {
             __typename: 'ItemOne',
             id: 'string',
@@ -593,6 +635,7 @@ describe('GraphqlMockingService', () => {
               id: 'string',
               field1: 'string',
               product: {
+                __typename: 'ConcreteProduct',
                 type: 'productType',
                 name: 'productName',
               },
@@ -669,6 +712,7 @@ describe('GraphqlMockingService', () => {
           field1: 'string',
           id: 'string',
           product: {
+            __typename: 'ConcreteProduct',
             name: 'productName',
             type: 'productType',
           },
@@ -684,6 +728,7 @@ describe('GraphqlMockingService', () => {
       const operationName = 'itemQuery';
       const seed = {
         data: {
+          __typename: 'Query',
           item: {
             __typename: 'ItemOne',
             id: 'string',
@@ -694,6 +739,7 @@ describe('GraphqlMockingService', () => {
                 id: 'string',
                 field1: 'string',
                 product: {
+                  __typename: 'ConcreteProduct',
                   type: 'productType',
                   name: 'productName',
                 },
@@ -797,6 +843,7 @@ describe('GraphqlMockingService', () => {
       // Check seeded properties
       expect(operationResult).toEqual({
         data: {
+          __typename: 'Query',
           [operationName]: expect.objectContaining({
             name: 'Flagship Desk',
           }),

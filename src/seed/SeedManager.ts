@@ -217,7 +217,6 @@ export default class SeedManager {
               variables,
               query,
               operationName,
-              augmentQuery: false,
             }
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
@@ -234,7 +233,6 @@ export default class SeedManager {
       }
     }
 
-    apolloServerManager.deletePrivateTypenameFields(operationMock);
     return operationMock;
   }
 }

@@ -49,7 +49,6 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {object} graphqlContext.variables - GraphQL query variables
  * @param {string} graphqlContext.operationName - GraphQL operation name
  * @param {ApolloServerManager} graphqlContext.apolloServerManager - ApolloServerManager instance
- * @param {boolean} graphqlContext.augmentQuery - Flag to add private typenames to all selection sets
  * @param {object} options - Merge options
  * @returns {object} A merged object and a list of warnings
  */
@@ -61,14 +60,13 @@ async function deepMerge(
     variables: undefined | Record<string, unknown>;
     operationName: string;
     apolloServerManager: ApolloServerManager;
-    augmentQuery: boolean;
   },
   options = {}
 ): Promise<{
   data: Record<string, unknown>;
   warnings: string[];
 }> {
-  const {query, variables, operationName, apolloServerManager, augmentQuery} =
+  const {query, variables, operationName, apolloServerManager} =
     graphqlContext;
   const warnings = new Set<string>();
   /**
@@ -141,27 +139,12 @@ async function deepMerge(
               } else {
                 // build a new query to fetch an array item at path
                 // this should happen regardless of overrides
-                const newSourceItemTypename =
-                  sourceItem.__typename ||
-                  sourceItem[apolloServerManager.getFieldName('typename')];
-                const newSourceItemQuery = buildPrivateTypeQuery({
-                  query: apolloServerManager.addTypenameFieldsToQuery(query),
-                  typeName: newSourceItemTypename,
+                const newSourceItemData = await apolloServerManager.getNewMock({
+                  query,
+                  typeName: sourceItem.__typename,
                   operationName,
-                  rollingKey: newRollingKey,
-                  apolloServerManager,
+                  rollingKey: newRollingKey
                 });
-                const newSourceItem =
-                  await apolloServerManager.executeOperation({
-                    query: newSourceItemQuery,
-                    variables: {},
-                    operationName:
-                      apolloServerManager.getFieldName('privateQuery'),
-                  });
-                const newSourceItemData =
-                  newSourceItem.data[
-                    apolloServerManager.getFieldName(newSourceItemTypename)
-                  ];
                 if (Object.entries(item).length) {
                   source[targetKey].push(
                     await merge(cloneDeep(newSourceItemData), item, {
@@ -205,21 +188,7 @@ async function deepMerge(
     return source;
   }
 
-  let data;
-  if (augmentQuery) {
-    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(query);
-    const newSource = await apolloServerManager.executeOperation({
-      query: typenamedQuery,
-      variables: variables || {},
-      operationName,
-    });
-
-    data = await merge(cloneDeep(newSource), seed, options);
-  } else {
-    data = await merge(cloneDeep(source), seed, options);
-  }
-
-  apolloServerManager.deletePrivateTypenameFields(data);
+  const data = await merge(cloneDeep(source), seed, options);
 
   return {
     data,

@@ -180,5 +180,5 @@ export default function ({
     ],
   };
 
-  return print(newQueryAst as ASTNode);
+  return apolloServerManager.addTypenameFieldsToQuery(print(newQueryAst as ASTNode));
 }

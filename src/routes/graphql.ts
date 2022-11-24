@@ -24,6 +24,7 @@ const graphqlRoutes = (
     }
 
     try {
+      // verify the query is valid
       parse(query);
     } catch (error) {
       GraphqlMockingContextLogger.error(
