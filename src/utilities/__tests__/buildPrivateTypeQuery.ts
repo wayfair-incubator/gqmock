@@ -13,7 +13,7 @@ describe('buildPrivateTypeQuery', function () {
     apolloServerManager = new ApolloServerManager();
     apolloServerManager.createApolloServer(schema, {});
   });
-  it('should build a query for the correct inline fragment', function () {
+  it('should build a query for the correct inline fragment', () => {
     const rollingKey = 'data.item';
     const query = `query itemQuery {
         item {
@@ -93,7 +93,7 @@ describe('buildPrivateTypeQuery', function () {
     ).toBe(expectedQuery);
   });
 
-  it('should build a query for the correct nested inline fragment', function () {
+  it('should build a query for the correct nested inline fragment', () => {
     const rollingKey = 'data.item.subItem1';
     const query = `query itemQuery {
         item {
@@ -150,7 +150,7 @@ describe('buildPrivateTypeQuery', function () {
     ).toBe(expectedQuery);
   });
 
-  it('should build a query for type without interfaces', function () {
+  it('should build a query for type without interfaces', () => {
     const rollingKey = 'data.productByName.variants';
     const query = `
       query productByName($name: String!) {
@@ -183,5 +183,79 @@ describe('buildPrivateTypeQuery', function () {
   }
   __typename
 }`);
+  });
+
+  it('should build a query with aliases and fragments', () => {
+    const rollingKey = 'data.officeItems.aliasedSubItem';
+    const query = `fragment commonItemsFields on Item {
+        __typename
+        nodeId: id
+        type
+        ... on ItemOne {
+          someField1
+          aliasedSubItem: subItem1 {
+            __typename
+            id
+            ... on SubItemOne {
+              field1
+              product {
+                type
+                name
+              }
+            }
+            ... on SubItemTwo {
+              field2
+            }
+            ... on SubItemThree {
+              field3
+            }
+          }
+        }
+        ... on ItemTwo {
+          someField2
+        }
+        ... on ItemThree {
+          someField3
+        }
+        ... on ItemFour {
+          someField4
+        }
+        ... on ItemFive {
+          someField5
+        }
+      }
+      
+    query itemsQuery {
+      officeItems: items(type: "office") {
+        ...commonItemsFields
+      }
+      homeItems: items(type: "home") {
+        ...commonItemsFields
+      }
+    }`;
+
+    const expectedQuery = `query gqmock_privateQuery {
+  gqmock_SubItemOne {
+    __typename
+    id
+    field1
+    product {
+      type
+      name
+      __typename
+    }
+  }
+  __typename
+}`;
+
+    expect(
+      buildPrivateTypeQuery({
+        query: apolloServerManager.expandFragments(query),
+        typeName: 'SubItemOne',
+        operationName: 'itemsQuery',
+        rollingKey,
+        apolloServerManager,
+      })
+    ).toBe(expectedQuery);
   });
 });

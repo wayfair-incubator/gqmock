@@ -214,7 +214,6 @@ export default class SeedManager {
             {data: validSeed.operationSeedResponse.data || {}},
             {
               apolloServerManager,
-              variables,
               query,
               operationName,
             }

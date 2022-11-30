@@ -1,14 +1,18 @@
 import {ApolloServer} from '@apollo/server';
 import {buildSubgraphSchema} from '@apollo/subgraph';
 import {
+  buildASTSchema,
+  DefinitionNode,
+  FragmentDefinitionNode,
   GraphQLSchema,
-  parse,
-  visit,
+  Kind,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  Kind,
-  buildASTSchema,
+  parse,
   print,
+  printSchema,
+  SelectionNode,
+  visit,
 } from 'graphql';
 import {DocumentNode} from 'graphql/language/ast';
 import buildPrivateTypeQuery from './utilities/buildPrivateTypeQuery';
@@ -232,5 +236,76 @@ export default class ApolloServerManager {
     });
 
     return print(newQuery);
+  }
+
+  expandFragments(query: string): string {
+    const queryAst = parse(query);
+    const definitions = queryAst.definitions;
+    let newQuery = visit(queryAst, {
+      SelectionSet: (node) => {
+        node.selections = [
+          ...node.selections.reduce(
+            (selections: SelectionNode[], selection) => {
+              if (selection.kind === Kind.FRAGMENT_SPREAD) {
+                const fragmentDefinition = definitions.find(
+                  (definition) =>
+                    definition.kind === Kind.FRAGMENT_DEFINITION &&
+                    definition.name.value === selection.name.value
+                ) as FragmentDefinitionNode | undefined;
+                if (fragmentDefinition) {
+                  selections.push({
+                    kind: Kind.INLINE_FRAGMENT,
+                    typeCondition: fragmentDefinition.typeCondition,
+                    selectionSet: fragmentDefinition.selectionSet,
+                  });
+                }
+              } else {
+                selections.push(selection);
+              }
+
+              return selections;
+            },
+            []
+          ),
+        ];
+        return node;
+      },
+    });
+
+    newQuery = {
+      ...newQuery,
+      definitions: [
+        ...(newQuery.definitions.filter(
+          (definition) => definition.kind !== Kind.FRAGMENT_DEFINITION
+        ) as DefinitionNode[]),
+      ],
+    };
+
+    return print(newQuery);
+  }
+
+  getInterfaceImplementations(
+    schema: GraphQLSchema,
+    typeName: string
+  ): string[] {
+    const schemaAst = parse(printSchema(schema));
+    const typeDefinition = schemaAst.definitions.find((definition) => {
+      if ('name' in definition) {
+        return definition.name?.value === typeName;
+      }
+
+      return false;
+    });
+
+    if (typeDefinition && 'interfaces' in typeDefinition) {
+      return (
+        typeDefinition.interfaces?.map(
+          (interfaceImplementationDefinition) =>
+            interfaceImplementationDefinition.name.value
+        ) || []
+      );
+    }
+
+    return [];
   }
 }

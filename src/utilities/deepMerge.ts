@@ -1,7 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
 import escapeStringRegexp from 'escape-string-regexp';
 import ApolloServerManager from '../ApolloServerManager';
-import buildPrivateTypeQuery from './buildPrivateTypeQuery';
 
 /**
  * Append key to a path
@@ -46,7 +45,6 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {object} seed - Object to be merged into source
  * @param {object} graphqlContext - Properties required for making supplemental GraphQL queries
  * @param {string} graphqlContext.query - Original GraphQL query
- * @param {object} graphqlContext.variables - GraphQL query variables
  * @param {string} graphqlContext.operationName - GraphQL operation name
  * @param {ApolloServerManager} graphqlContext.apolloServerManager - ApolloServerManager instance
  * @param {object} options - Merge options
@@ -57,7 +55,6 @@ async function deepMerge(
   seed: Record<string, unknown>,
   graphqlContext: {
     query: string;
-    variables: undefined | Record<string, unknown>;
     operationName: string;
     apolloServerManager: ApolloServerManager;
   },
@@ -66,8 +63,7 @@ async function deepMerge(
   data: Record<string, unknown>;
   warnings: string[];
 }> {
-  const {query, variables, operationName, apolloServerManager} =
-    graphqlContext;
+  const {query, operationName, apolloServerManager} = graphqlContext;
   const warnings = new Set<string>();
   /**
    * Returns the result of merging target into source
@@ -130,8 +126,8 @@ async function deepMerge(
             );
           }
         } else if (Array.isArray(targetValue)) {
-          const sourceItem = source[targetKey][0];
           if (Array.isArray(source[targetKey])) {
+            const sourceItem = {...source[targetKey][0]};
             source[targetKey] = [];
             for (const item of targetValue) {
               if (!(item instanceof Object)) {
@@ -143,7 +139,7 @@ async function deepMerge(
                   query,
                   typeName: sourceItem.__typename,
                   operationName,
-                  rollingKey: newRollingKey
+                  rollingKey: newRollingKey,
                 });
                 if (Object.entries(item).length) {
                   source[targetKey].push(

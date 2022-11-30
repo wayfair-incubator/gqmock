@@ -38,8 +38,10 @@ const graphqlRoutes = (
       });
       return;
     }
-
-    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(query);
+    const queryWithoutFragments = apolloServerManager.expandFragments(query);
+    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(
+      queryWithoutFragments
+    );
 
     let operationResult;
     try {
@@ -66,7 +68,7 @@ const graphqlRoutes = (
       operationMock: operationResult,
       sequenceId,
       apolloServerManager,
-      query,
+      query: typenamedQuery,
     });
 
     seededQueryResult.warnings?.forEach((warning) => {

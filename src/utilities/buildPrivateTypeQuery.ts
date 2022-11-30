@@ -1,7 +1,7 @@
 import {
   ASTNode,
   FieldNode,
-  FragmentDefinitionNode,
+  GraphQLSchema,
   InlineFragmentNode,
   Kind,
   OperationDefinitionNode,
@@ -47,108 +47,129 @@ export default function ({
   apolloServerManager: ApolloServerManager;
 }): string {
   const keys = rollingKey.replace(/^data\./, '').split('.');
+  const interfaceImplementations =
+    apolloServerManager.getInterfaceImplementations(
+      apolloServerManager.schema as GraphQLSchema,
+      typeName
+    );
   const queryAst = parse(query);
-  let node = queryAst.definitions.find((definition) => {
+  let node: ASTNode = queryAst.definitions.find((definition) => {
     return (
       definition.kind === Kind.OPERATION_DEFINITION &&
       definition.name?.value === operationName
     );
   }) as OperationDefinitionNode;
 
-  while (keys.length) {
-    const key = keys.shift();
-    let _node;
-    if (node) {
-      for (const selection of node.selectionSet.selections) {
+  const nodesToVisit: {
+    _node: ASTNode;
+    currentKeys: string[];
+  }[] = [
+    {
+      _node: node,
+      currentKeys: [...keys],
+    },
+  ];
+
+  let isFound = false;
+  while (nodesToVisit.length) {
+    let {_node} = nodesToVisit[0];
+    const {currentKeys} = nodesToVisit[0];
+    const key = currentKeys[0];
+    if (_node && 'selectionSet' in _node) {
+      for (const selection of _node.selectionSet?.selections || []) {
         if (keyMatchesFieldNode(selection, key)) {
-          _node = selection;
+          if (
+            currentKeys.length > 1 &&
+            (selection as FieldNode).selectionSet?.selections.length
+          ) {
+            nodesToVisit.push({
+              _node: selection,
+              currentKeys: currentKeys.slice(1),
+            });
+          } else if (currentKeys.length === 1) {
+            _node = selection;
+            isFound = true;
+          }
           break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
-          const correctSelection = selection.selectionSet.selections.find(
-            (nestedSelection) => {
-              return keyMatchesFieldNode(nestedSelection, key);
-            }
-          );
-          if (correctSelection) {
-            _node = correctSelection;
-            break;
-          }
-        } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
-          const fragmentDefinition = queryAst.definitions.find(
-            (definition) =>
-              definition.kind === Kind.FRAGMENT_DEFINITION &&
-              definition.name.value === selection.name.value
-          );
-          for (const fragmentSelection of (
-            fragmentDefinition as FragmentDefinitionNode
-          )?.selectionSet.selections) {
-            if (keyMatchesFieldNode(fragmentSelection, key)) {
-              _node = fragmentSelection;
-              break;
-            } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
-              const correctFragmentSelection =
-                fragmentSelection.selectionSet.selections.find(
-                  (nestedSelection) => {
-                    return keyMatchesFieldNode(nestedSelection, key);
-                  }
-                );
-              if (correctFragmentSelection) {
-                _node = correctFragmentSelection;
-                break;
+          let isInlineFragmentSelectionFound = false;
+          for (const inlineFragmentSelection of selection.selectionSet
+            .selections) {
+            if (keyMatchesFieldNode(inlineFragmentSelection, key)) {
+              if (
+                currentKeys.length > 1 &&
+                (inlineFragmentSelection as FieldNode).selectionSet?.selections
+                  .length
+              ) {
+                nodesToVisit.push({
+                  _node: inlineFragmentSelection,
+                  currentKeys: currentKeys.slice(1),
+                });
+              } else if (currentKeys.length === 1) {
+                _node = inlineFragmentSelection;
+                isFound = true;
               }
+              isInlineFragmentSelectionFound = true;
+            } else if (
+              inlineFragmentSelection.kind !== Kind.FIELD &&
+              'selectionSet' in inlineFragmentSelection
+            ) {
+              nodesToVisit.push({
+                _node: inlineFragmentSelection,
+                currentKeys,
+              });
             }
+
+            if (isInlineFragmentSelectionFound) {
+              break;
+            }
+          }
+          if (isInlineFragmentSelectionFound) {
+            break;
           }
         }
       }
-    } else {
+    }
+    nodesToVisit.shift();
+
+    if (isFound) {
+      node = _node;
       break;
     }
-
-    node = _node;
   }
 
   const fields: Array<FieldNode | InlineFragmentNode> = [];
-
-  node?.selectionSet?.selections.forEach((selection) => {
-    if (selection.kind === Kind.FIELD) {
-      fields.push(selection);
-    } else if (selection.kind === Kind.INLINE_FRAGMENT) {
-      if (
-        selection.typeCondition &&
-        selection.typeCondition.name.value === typeName
-      ) {
-        fields.push(
-          ...(selection.selectionSet.selections as Array<
-            FieldNode | InlineFragmentNode
-          >)
-        );
-      }
-    } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
-      const fragmentDefinition = queryAst.definitions.find(
-        (definition) =>
-          definition.kind === Kind.FRAGMENT_DEFINITION &&
-          definition.name.value === selection.name.value
-      );
-      (
-        fragmentDefinition as FragmentDefinitionNode
-      )?.selectionSet.selections.forEach((fragmentSelection) => {
-        if (fragmentSelection.kind === Kind.FIELD) {
-          fields.push(fragmentSelection);
-        } else if (fragmentSelection.kind === Kind.INLINE_FRAGMENT) {
+  const subQueryNodesToVisit = [node];
+  while (subQueryNodesToVisit.length) {
+    const _node = subQueryNodesToVisit[0];
+    if (_node && 'selectionSet' in _node) {
+      _node.selectionSet?.selections.forEach((selection) => {
+        if (selection.kind === Kind.FIELD) {
+          fields.push(selection);
+        } else if (selection.kind === Kind.INLINE_FRAGMENT) {
           if (
-            fragmentSelection.typeCondition &&
-            fragmentSelection.typeCondition.name.value === typeName
+            selection.typeCondition &&
+            selection.typeCondition.name.value === typeName
           ) {
             fields.push(
-              ...(fragmentSelection.selectionSet.selections as Array<
+              ...(selection.selectionSet.selections as Array<
                 FieldNode | InlineFragmentNode
               >)
             );
+          } else if (
+            selection.typeCondition &&
+            interfaceImplementations.includes(
+              selection.typeCondition.name.value
+            )
+          ) {
+            subQueryNodesToVisit.push(selection);
           }
         }
       });
     }
-  });
+
+    subQueryNodesToVisit.shift();
+  }
 
   const newQueryAst = {
     kind: Kind.DOCUMENT,
@@ -180,5 +201,7 @@ export default function ({
     ],
   };
 
-  return apolloServerManager.addTypenameFieldsToQuery(print(newQueryAst as ASTNode));
+  return apolloServerManager.addTypenameFieldsToQuery(
+    print(newQueryAst as ASTNode)
+  );
 }

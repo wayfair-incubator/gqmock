@@ -645,7 +645,7 @@ describe('GraphqlMockingService', () => {
       });
     });
 
-    it('should handle aliases correctly', async () => {
+    it('should handle aliases and nested fragments correctly', async () => {
       const mockingContext = mockingService.createContext();
       const operationName = 'itemsQuery';
       await mockingContext.operation(operationName, {
@@ -686,12 +686,14 @@ describe('GraphqlMockingService', () => {
         method: 'post',
         body: JSON.stringify({
           operationName,
-          query: `fragment commonItemsFields on Item { __typename nodeId: id type ... on ItemOne { someField1 aliasedSubItem: subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 }}} ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}
+          query: `fragment commonItemsFields on Item { __typename nodeId: id type ... on ItemOne { someField1 aliasedSubItem: subItem1 { __typename id ... on SubItemOne { field1 product { type name } } ... on SubItemTwo { field2 } ... on SubItemThree { field3 } } } ... on ItemTwo { someField2 } ... on ItemThree { someField3 } ... on ItemFour { someField4 } ... on ItemFive { someField5 }}
 
-          query itemsQuery {
-    officeItems: items(type: "office") { ...commonItemsFields }
-    homeItems: items(type: "home") { ...commonItemsFields }
-}`,
+fragment commonItems2 on Item { ...commonItemsFields }
+
+fragment commonItems3 on Item { ...commonItems2 }
+
+query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeItems: items(type: "home") { ...commonItems2 }}
+`,
         }),
         headers: {
           'Content-Type': 'application/json',
