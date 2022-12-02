@@ -23,9 +23,9 @@ const graphqlRoutes = (
       return;
     }
 
-    let parsedQuery;
     try {
-      parsedQuery = parse(query);
+      // verify the query is valid
+      parse(query);
     } catch (error) {
       GraphqlMockingContextLogger.error(
         `Invalid GraphQL Query: ${(error as Error).message}`,
@@ -38,13 +38,17 @@ const graphqlRoutes = (
       });
       return;
     }
+    const queryWithoutFragments = apolloServerManager.expandFragments(query);
+    const typenamedQuery = apolloServerManager.addTypenameFieldsToQuery(
+      queryWithoutFragments
+    );
 
     let operationResult;
     try {
       const apolloServer = apolloServerManager.apolloServer;
       if (apolloServer) {
         operationResult = await apolloServerManager.executeOperation({
-          query: parsedQuery,
+          query: typenamedQuery,
           variables,
           operationName,
         });
@@ -64,7 +68,7 @@ const graphqlRoutes = (
       operationMock: operationResult,
       sequenceId,
       apolloServerManager,
-      query,
+      query: typenamedQuery,
     });
 
     seededQueryResult.warnings?.forEach((warning) => {

@@ -1,0 +1,126 @@
+type Tag {
+  value: String
+}
+
+type Picture {
+  url: String
+}
+
+type ProductVariant {
+  name: String
+  color: String
+  tags: [Tag]
+  pictures: [Picture]
+}
+
+type Dimensions {
+  length: Int
+  width: Int
+  height: Int
+}
+
+type Product {
+  name: String
+  variants: [ProductVariant]
+  dimensions: Dimensions
+}
+
+interface SomeProduct {
+  name: String
+}
+
+type ConcreteProduct implements SomeProduct {
+  name: String
+  type: String
+}
+
+interface SubItem {
+  id: String
+}
+
+type SubItemOne implements SubItem {
+  id: String
+  field1: String
+  product: ConcreteProduct
+}
+
+type SubItemTwo implements SubItem {
+  id: String
+  field2: String
+}
+
+type SubItemThree implements SubItem {
+  id: String
+  field3: String
+}
+
+interface Item {
+  id: String
+  type: String
+}
+
+type ItemOne implements Item {
+  id: String
+  type: String
+  someField1: String
+  subItem1: SubItem
+  subItems: [SubItem]
+  products: [Product]
+}
+
+type ItemTwo implements Item {
+  id: String
+  type: String
+  someField2: String
+  subItem2: SubItem
+}
+
+type ItemThree implements Item {
+  id: String
+  type: String
+  someField3: String
+  subItem3: SubItem
+}
+
+type ItemFour implements Item {
+  id: String
+  type: String
+  someField4: String
+}
+
+type ItemFive implements Item {
+  id: String
+  type: String
+  someField5: String
+}
+
+type Query {
+  product: Product
+  products: [Product]
+  productByName(name: String!): Product
+  productBySku(sku: String!): Product
+  item: Item
+  items(type: String): [Item]
+}
+
+enum SomeEnum {
+  ONE
+  TWO
+}
+
+query itemQuery {
+  item {
+    ... on ItemOne {
+      someField1
+    }
+    ... on ItemTwo {
+      someField2
+    }
+    ... on ItemThree {
+      someField3
+    }
+    ... on ItemFour {
+      someField4
+    }
+  }
+}

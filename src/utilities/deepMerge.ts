@@ -92,6 +92,7 @@ async function deepMerge(
         rollingKey,
       });
     }
+
     for (const [targetKey, targetValue] of Object.entries(target)) {
       const newRollingKey = buildRollingKey(rollingKey, targetKey);
       if (source[targetKey]) {
@@ -119,38 +120,36 @@ async function deepMerge(
             shorthandOverrides
           )) {
             source[targetKey][index] = await merge(
-              {...source[targetKey][index]},
+              cloneDeep(source[targetKey][index]),
               overrideValue,
               {rollingKey: newRollingKey, metaPropertyPrefix}
             );
           }
         } else if (Array.isArray(targetValue)) {
-          const lastTargetArrayItem = targetValue[targetValue.length - 1];
-          const sourceItem = source[targetKey][0];
           if (Array.isArray(source[targetKey])) {
+            const sourceItem = {...source[targetKey][0]};
             source[targetKey] = [];
             for (const item of targetValue) {
-              if (Object.entries(item).length) {
-                if (item instanceof Object) {
-                  source[targetKey].push(
-                    await merge({...sourceItem}, item, {
-                      rollingKey: newRollingKey,
-                      metaPropertyPrefix,
-                    })
-                  );
-                } else {
-                  source[targetKey].push(item);
-                }
+              if (!(item instanceof Object)) {
+                source[targetKey].push(item);
               } else {
-                if (lastTargetArrayItem instanceof Object) {
+                // build a new query to fetch an array item at path
+                // this should happen regardless of overrides
+                const newSourceItemData = await apolloServerManager.getNewMock({
+                  query,
+                  typeName: sourceItem.__typename,
+                  operationName,
+                  rollingKey: newRollingKey,
+                });
+                if (Object.entries(item).length) {
                   source[targetKey].push(
-                    await merge(sourceItem, lastTargetArrayItem, {
+                    await merge(cloneDeep(newSourceItemData), item, {
                       rollingKey: newRollingKey,
                       metaPropertyPrefix,
                     })
                   );
                 } else {
-                  source[targetKey].push(lastTargetArrayItem);
+                  source[targetKey].push(newSourceItemData);
                 }
               }
             }

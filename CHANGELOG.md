@@ -10,6 +10,14 @@ and this project adheres to
 
 ### TBA
 
+## [v0.5.1] - 2022-11-22
+
+### Fixed
+
+- Fix overmocking of arrays seeded with longhand notation
+- Improve mocking of unseeded array items
+- Fix named fragments handling
+
 ## [v0.5.0] - 2022-11-16
 
 ### Feat
