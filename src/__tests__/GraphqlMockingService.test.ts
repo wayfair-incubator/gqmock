@@ -579,7 +579,7 @@ describe('GraphqlMockingService', () => {
       await subgraphMockingService.stop();
     });
 
-    it('should allow creating contexts with a shared sequenceId', function () {
+    it('should allow creating contexts with a shared sequenceId', () => {
       const contextA = mockingService.createContext();
       const contextB = subgraphMockingService.createContext(
         contextA.sequenceId
@@ -778,11 +778,55 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
 
       expect(operationResult).toEqual(seed);
     });
+
+    it('should return different mock values between queries', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'productByName';
+      const variables = {name: 'desk'};
+      const query = `query productByName($name: String!) { productByName(name: $name) { id } }`;
+      const headers = {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      };
+
+      const firstOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers,
+        }
+      ).then((res) => res.json());
+
+      const secondOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers,
+        }
+      ).then((res) => res.json());
+
+      expect(firstOperationResult.data.productByName.id).not.toBe(
+        secondOperationResult.data.productByName.id
+      );
+    });
   });
 
   describe('with fakerConfig', function () {
     const fakerConfig = {
       Product: {
+        id: {
+          method: 'datatype.string',
+        },
         name: {
           method: 'commerce.product',
         },
@@ -866,6 +910,47 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
         expect.objectContaining({
           name: 'Hello World',
         })
+      );
+    });
+
+    it('should return different faker values between queries', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'productByName';
+      const variables = {name: 'desk'};
+      const query = `query productByName($name: String!) { productByName(name: $name) { id } }`;
+      const headers = {
+        'Content-Type': 'application/json',
+        'mocking-sequence-id': mockingContext.sequenceId,
+      };
+
+      const firstOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers,
+        }
+      ).then((res) => res.json());
+
+      const secondOperationResult = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query,
+            variables,
+          }),
+          headers,
+        }
+      ).then((res) => res.json());
+
+      expect(firstOperationResult.data.productByName.id).not.toBe(
+        secondOperationResult.data.productByName.id
       );
     });
   });

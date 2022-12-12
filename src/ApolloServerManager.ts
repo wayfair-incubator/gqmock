@@ -16,7 +16,7 @@ import {
 } from 'graphql';
 import {DocumentNode} from 'graphql/language/ast';
 import buildPrivateTypeQuery from './utilities/buildPrivateTypeQuery';
-import {addMocksToSchema} from '@graphql-tools/mock';
+import {addMocksToSchema, createMockStore} from '@graphql-tools/mock';
 import {faker} from '@faker-js/faker';
 
 const GQMOCK_QUERY_PREFIX = 'gqmock';
@@ -27,6 +27,7 @@ type SchemaRegistrationOptions = {
 };
 
 export default class ApolloServerManager {
+  private mockStore;
   private apolloServerInstance;
   private graphQLSchema: GraphQLSchema | null = null;
   private fakerConfig: Record<string, object> = {};
@@ -57,9 +58,15 @@ export default class ApolloServerManager {
       this.fakerConfig = options.fakerConfig;
     }
 
+    this.mockStore = createMockStore({
+      schema: this.graphQLSchema,
+      mocks: this.createCustomMocks(this.fakerConfig),
+    });
+
     this.apolloServerInstance = new ApolloServer({
       schema: addMocksToSchema({
         schema: this.graphQLSchema,
+        store: this.mockStore,
         mocks: this.createCustomMocks(this.fakerConfig),
       }),
     });
@@ -68,6 +75,7 @@ export default class ApolloServerManager {
   private createCustomMocks(fakerConfig) {
     const mocks = {};
     Object.entries(fakerConfig).forEach(([typeName, typeConfig]) => {
+      const typeFieldMocks = {};
       Object.entries(
         typeConfig as Record<string, Record<string, string>>
       ).forEach(([fieldName, fakerFieldConfig]) => {
@@ -85,7 +93,7 @@ export default class ApolloServerManager {
           }
         }
         if (fakerMethod) {
-          mocks[typeName][fieldName] = () => {
+          typeFieldMocks[fieldName] = () => {
             if (Array.isArray(fakerFieldConfig.args)) {
               return fakerMethod(...fakerFieldConfig.args);
             } else if (!!fakerFieldConfig.args) {
@@ -96,6 +104,9 @@ export default class ApolloServerManager {
           };
         }
       });
+      if (Object.keys(typeFieldMocks).length) {
+        mocks[typeName] = () => typeFieldMocks;
+      }
     });
 
     return mocks;
@@ -184,6 +195,7 @@ export default class ApolloServerManager {
     variables: Record<string, unknown>;
     operationName: string;
   }): Promise<{data: Record<string, object>}> {
+    this.mockStore.reset();
     return this.apolloServer
       ?.executeOperation({
         query,

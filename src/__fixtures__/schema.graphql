@@ -20,6 +20,7 @@ type Dimensions {
 }
 
 type Product {
+  id: ID!
   name: String
   variants: [ProductVariant]
   dimensions: Dimensions
