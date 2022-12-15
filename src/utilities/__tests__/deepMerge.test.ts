@@ -305,19 +305,19 @@ describe('deepMerge', () => {
           name: 'Flagship Desk',
           variants: [
             {
-               __typename: 'ProductVariant',
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
-               __typename: 'ProductVariant',
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
-               __typename: 'ProductVariant',
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
-               __typename: 'ProductVariant',
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
           ],
@@ -325,7 +325,11 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager, operationName, query});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
@@ -636,7 +640,11 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager, operationName, query});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
