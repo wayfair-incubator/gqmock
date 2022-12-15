@@ -16,6 +16,10 @@ and this project adheres to
 
 - Fix static mocks for shorthand notation arrays
 
+### Added 
+
+- Added CORS to enable local development work
+
 
 ## [v0.5.2] - 2022-12-12
 
