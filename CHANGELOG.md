@@ -10,6 +10,13 @@ and this project adheres to
 
 ### TBA
 
+## [v0.5.3] - 2022-12-15
+
+### Fixed
+
+- Fix static mocks for shorthand notation arrays
+
+
 ## [v0.5.2] - 2022-12-12
 
 ### Fixed

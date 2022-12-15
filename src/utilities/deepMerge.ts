@@ -103,8 +103,16 @@ async function deepMerge(
           const sourceItem = source[targetKey][0];
           source[targetKey] = [];
           for (let i = 0; i < targetValue[`${metaPropertyPrefix}length`]; i++) {
+            // build a new query to fetch an array item at path
+            // this should happen regardless of overrides
+            const newSourceItemData = await apolloServerManager.getNewMock({
+              query,
+              typeName: sourceItem.__typename,
+              operationName,
+              rollingKey: newRollingKey,
+            });
             source[targetKey].push(
-              await merge(sourceItem, targetValue, {
+              await merge(newSourceItemData, targetValue, {
                 rollingKey: newRollingKey,
                 metaPropertyPrefix,
               })
@@ -184,7 +192,7 @@ async function deepMerge(
     return source;
   }
 
-  const data = await merge(cloneDeep(source), seed, options);
+  const data = await merge(source, seed, options);
 
   return {
     data,

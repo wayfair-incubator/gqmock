@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import graphqlRoutes from '../routes/graphql';
 import seedRoutes from '../routes/seed';
 import SeedManager from '../seed/SeedManager';
@@ -13,6 +14,7 @@ export default function createApp(): express.Express {
   const apolloServerManager = new ApolloServerManager();
 
   app.use(express.json({limit: '5mb'}));
+  app.use(cors());
   app.use(
     express.urlencoded({
       extended: true,
