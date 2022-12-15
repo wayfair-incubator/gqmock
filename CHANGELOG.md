@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.5.2] - 2022-12-12
+
+### Fixed
+
+- Fix mock caching resulting in constant values for fields
+
 ## [v0.5.1] - 2022-11-22
 
 ### Fixed

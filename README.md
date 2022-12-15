@@ -282,9 +282,7 @@ const operationSeedResponse = {
 ```
 
 In this example, `variants` is a list of 4 elements, and `tags` is a list of 2
-elements. In this notation, the last element is treated as the blueprint for
-_all_ elements for the array. However, this blueprint can be overridden by
-defining an element in any index other than the last index.
+elements. Only variants 2 and 4 will have seeded values.
 
 ##### List short-hand notation
 
