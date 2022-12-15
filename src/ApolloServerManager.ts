@@ -67,7 +67,6 @@ export default class ApolloServerManager {
       schema: addMocksToSchema({
         schema: this.graphQLSchema,
         store: this.mockStore,
-        mocks: this.createCustomMocks(this.fakerConfig),
       }),
     });
   }
