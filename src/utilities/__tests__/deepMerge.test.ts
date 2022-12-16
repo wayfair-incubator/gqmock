@@ -14,7 +14,7 @@ describe('deepMerge', () => {
     apolloServerManager.createApolloServer(schemaSource, {});
   });
 
-  it('should merge source with a partially defined object', async function () {
+  it('should merge source with a partially defined object', async () => {
     const source = {
       data: {
         product: {
@@ -58,7 +58,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge source with a fully defined object', async function () {
+  it('should merge source with a fully defined object', async () => {
     const source = {
       data: {
         product: {
@@ -94,7 +94,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should return merged data with warnings if any fields are skipped', async function () {
+  it('should return merged data with warnings if any fields are skipped', async () => {
     // seed defines fields not present in source
     const source = {
       data: {
@@ -154,7 +154,7 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should merge data with falsy values in source', async function () {
+  it('should merge data with falsy values in source', async () => {
     const source = {
       data: {
         item: {
@@ -184,7 +184,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge arrays using longhand notation', async function () {
+  it('should merge arrays using longhand notation', async () => {
     const source = {
       data: {
         product: {
@@ -263,18 +263,15 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge arrays using shorthand notation', async function () {
+  it('should merge arrays using shorthand notation', async () => {
     const source = {
       data: {
         product: {
-          name: 'sourceProductName',
+          __typename: 'Product',
+          name: 'Flagship Desk',
           variants: [
-            {
-              name: 'sourceVariantName',
-            },
-            {
-              name: 'sourceVariantName',
-            },
+            {__typename: 'ProductVariant', name: 'office desk'},
+            {__typename: 'ProductVariant', name: 'office desk'},
           ],
         },
       },
@@ -289,21 +286,38 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'ProductQuery';
+    const query = `query ${operationName} {
+        product {
+            __typename
+            name
+            variants {
+                __typename
+                name
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         product: {
+          __typename: 'Product',
           name: 'Flagship Desk',
           variants: [
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
           ],
@@ -311,12 +325,16 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge nested arrays using longhand notation', async function () {
+  it('should merge nested arrays using longhand notation', async () => {
     const source = {
       data: {
         product: {
@@ -470,31 +488,38 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge nested arrays using shorthand notation', async function () {
+  it('should merge nested arrays using shorthand notation', async () => {
     const source = {
       data: {
         product: {
-          name: 'sourceProductName',
+          __typename: 'Product',
+          name: 'Hello World',
           variants: [
             {
-              name: 'sourceVariantName',
+              __typename: 'ProductVariant',
+              name: 'Hello World',
               tags: [
                 {
-                  value: 'sourceTagValue',
+                  __typename: 'Tag',
+                  value: 'Hello World',
                 },
                 {
-                  value: 'sourceTagValue',
+                  __typename: 'Tag',
+                  value: 'Hello World',
                 },
               ],
             },
             {
-              name: 'sourceVariantName',
+              __typename: 'ProductVariant',
+              name: 'Hello World',
               tags: [
                 {
-                  value: 'sourceTagValue',
+                  __typename: 'Tag',
+                  value: 'Hello World',
                 },
                 {
-                  value: 'sourceTagValue',
+                  __typename: 'Tag',
+                  value: 'Hello World',
                 },
               ],
             },
@@ -516,63 +541,96 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'ProductQuery';
+    const query = `query ${operationName} {
+        product {
+            __typename
+            name
+            variants {
+                __typename
+                name
+                tags {
+                    __typename
+                    value
+                }
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         product: {
+          __typename: 'Product',
           name: 'Flagship Desk',
           variants: [
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
               tags: [
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
               ],
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
               tags: [
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
               ],
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
               tags: [
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
               ],
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
               tags: [
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
                 {
+                  __typename: 'Tag',
                   value: 'adjustable',
                 },
               ],
@@ -582,12 +640,16 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow overrides of specific array items using longhand notation', async function () {
+  it('should allow overrides of specific array items using longhand notation', async () => {
     const source = {
       data: {
         product: {
@@ -660,18 +722,15 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow overrides of specific array items using shorthand notation', async function () {
+  it('should allow overrides of specific array items using shorthand notation', async () => {
     const source = {
       data: {
         product: {
-          name: 'sourceProductName',
+          __typename: 'Product',
+          name: 'Flagship Desk',
           variants: [
-            {
-              name: 'sourceVariantName',
-            },
-            {
-              name: 'sourceVariantName',
-            },
+            {__typename: 'ProductVariant', name: 'office desk'},
+            {__typename: 'ProductVariant', name: 'office desk'},
           ],
         },
       },
@@ -690,21 +749,38 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'ProductQuery';
+    const query = `query ${operationName} {
+        product {
+            __typename
+            name
+            variants {
+                __typename
+                name
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         product: {
+          __typename: 'Product',
           name: 'Flagship Desk',
           variants: [
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'coffee table',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
           ],
@@ -712,24 +788,25 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should allow custom meta prefix', async function () {
+  it('should allow custom meta prefix', async () => {
     // $ is the meta prefix by default
     const source = {
       data: {
         product: {
-          name: 'sourceProductName',
+          __typename: 'Product',
+          name: 'Flagship Desk',
           variants: [
-            {
-              name: 'sourceVariantName',
-            },
-            {
-              name: 'sourceVariantName',
-            },
+            {__typename: 'ProductVariant', name: 'office desk'},
+            {__typename: 'ProductVariant', name: 'office desk'},
           ],
         },
       },
@@ -744,39 +821,44 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'ProductQuery';
+    const query = `query ${operationName} {
+        product {
+            __typename
+            name
+            variants {
+                __typename
+                name
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         product: {
+          __typename: 'Product',
           name: 'Flagship Desk',
           variants: [
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
           ],
         },
       },
     };
-
-    const operationName = 'getProduct';
-    const query = `
-      query ${operationName} {
-        product {
-          name
-          variants {
-            name
-          }
-        }
-      }
-    `;
 
     const mergeResult = await deepMerge(
       source,
@@ -794,7 +876,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should not merge value if seed defines an array but source does not', async function () {
+  it('should not merge value if seed defines an array but source does not', async () => {
     //array type mismatch
     const source = {
       data: {
@@ -835,18 +917,15 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should return warnings if seed defines extra fields inside arrays', async function () {
+  it('should return warnings if seed defines extra fields inside arrays', async () => {
     const source = {
       data: {
         product: {
-          name: 'sourceProductName',
+          __typename: 'Product',
+          name: 'Flagship Desk',
           variants: [
-            {
-              name: 'sourceVariantName',
-            },
-            {
-              name: 'sourceVariantName',
-            },
+            {__typename: 'ProductVariant', name: 'office desk'},
+            {__typename: 'ProductVariant', name: 'office desk'},
           ],
         },
       },
@@ -861,21 +940,38 @@ describe('deepMerge', () => {
       },
     };
 
+    const operationName = 'ProductQuery';
+    const query = `query ${operationName} {
+        product {
+            __typename
+            name
+            variants {
+                __typename
+                name
+            }
+        }
+    }`;
+
     const expectedResult = {
       data: {
         product: {
+          __typename: 'Product',
           name: 'Flagship Desk',
           variants: [
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
             {
+              __typename: 'ProductVariant',
               name: 'office desk',
             },
           ],
@@ -883,7 +979,11 @@ describe('deepMerge', () => {
       },
     };
 
-    const mergeResult = await deepMerge(source, seed, {apolloServerManager});
+    const mergeResult = await deepMerge(source, seed, {
+      apolloServerManager,
+      operationName,
+      query,
+    });
     expect(mergeResult.data).toEqual(expectedResult);
     expect(mergeResult.warnings.length).toEqual(1);
     expect(mergeResult.warnings).toContain(
@@ -891,7 +991,7 @@ describe('deepMerge', () => {
     );
   });
 
-  it('should handle empty arrays in seed', async function () {
+  it('should handle empty arrays in seed', async () => {
     const source = {
       data: {
         product: {
@@ -931,7 +1031,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should handle arrays with primitive values', async function () {
+  it('should handle arrays with primitive values', async () => {
     const source = {
       data: {
         product: {
@@ -964,7 +1064,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should handle null values in mock correctly', async function () {
+  it('should handle null values in mock correctly', async () => {
     const source = {
       data: {
         product: null,
@@ -996,7 +1096,7 @@ describe('deepMerge', () => {
     expect(mergeResult.warnings.length).toEqual(0);
   });
 
-  it('should merge data that matches valid type in interface', async function () {
+  it('should merge data that matches valid type in interface', async () => {
     const source = {
       data: {
         item: {
