@@ -18,8 +18,10 @@ and this project adheres to
 
 ### Added
 
-- Documentation about the mock server endpoints for use cases without access to the Node.js API that comes with this module
-- Documentation about using GQMock as a pure GraphQL HTTP server for local development
+- Documentation about the mock server endpoints for use cases without access to
+  the Node.js API that comes with this module
+- Documentation about using GQMock as a pure GraphQL HTTP server for local
+  development
 
 ## [v0.5.3] - 2022-12-15
 
