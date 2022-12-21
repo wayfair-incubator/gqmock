@@ -10,6 +10,17 @@ and this project adheres to
 
 ### TBA
 
+## [v0.5.4] - 2022-12-21
+
+### Fixed
+
+- Fix networkError seed behavior
+
+### Added
+
+- Documentation about the mock server endpoints for use cases without access to the Node.js API that comes with this module
+- Documentation about using GQMock as a pure GraphQL HTTP server for local development
+
 ## [v0.5.3] - 2022-12-15
 
 ### Fixed

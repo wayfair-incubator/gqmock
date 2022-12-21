@@ -2,6 +2,7 @@ import {v4 as uuidv4} from 'uuid';
 import AsyncChainable from './utilities/AsyncChainable';
 import MockServer from './MockServer';
 import {
+  NetworkErrorResponse,
   OperationMatchArguments,
   OperationSeedResponse,
   SeedOptions,
@@ -24,7 +25,7 @@ export default class GraphqlMockingContext extends AsyncChainable {
 
   operation(
     operationName: string,
-    operationSeedResponse: OperationSeedResponse,
+    seedResponse: OperationSeedResponse,
     operationMatchArguments?: OperationMatchArguments,
     options: SeedOptions = {}
   ): Promise<GraphqlMockingContext> {
@@ -34,7 +35,7 @@ export default class GraphqlMockingContext extends AsyncChainable {
           this.sequenceId,
           {
             operationName,
-            operationSeedResponse,
+            seedResponse,
             operationMatchArguments,
             options,
           }
@@ -46,7 +47,7 @@ export default class GraphqlMockingContext extends AsyncChainable {
 
   async networkError(
     operationName: string,
-    operationSeedResponse: OperationSeedResponse,
+    seedResponse: NetworkErrorResponse,
     operationMatchArguments?: OperationMatchArguments,
     options: SeedOptions = {}
   ): Promise<GraphqlMockingContext> {
@@ -56,7 +57,7 @@ export default class GraphqlMockingContext extends AsyncChainable {
           this.sequenceId,
           {
             operationName,
-            operationSeedResponse,
+            seedResponse,
             operationMatchArguments,
             options,
           }

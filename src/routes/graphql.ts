@@ -4,6 +4,7 @@ import GraphqlMockingContextLogger from '../utilities/Logger';
 import createRouter from '../utilities/createRouter';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
+import {SeededOperationResponse} from '../seed/types';
 
 const graphqlRoutes = (
   {seedManager, apolloServerManager} = {
@@ -55,31 +56,41 @@ const graphqlRoutes = (
       }
     } catch (error) {
       res.status(500);
-      res.send({
+      res.json({
         message: 'GraphQL operation execution error',
         error,
       });
       return;
     }
 
-    const seededQueryResult = await seedManager.mergeOperationResponse({
-      operationName,
-      variables,
-      operationMock: operationResult,
-      sequenceId,
-      apolloServerManager,
-      query: typenamedQuery,
-    });
+    const {operationResponse, statusCode} =
+      await seedManager.mergeOperationResponse({
+        operationName,
+        variables,
+        operationMock: operationResult,
+        sequenceId,
+        apolloServerManager,
+        query: typenamedQuery,
+      });
 
-    seededQueryResult.warnings?.forEach((warning) => {
-      GraphqlMockingContextLogger.warning(warning, sequenceId);
-    });
+    res.status(statusCode);
 
-    res.send(seededQueryResult);
+    if (operationResponse === null || operationResponse instanceof Object) {
+      if (operationResponse && 'warnings' in operationResponse) {
+        (operationResponse as SeededOperationResponse).warnings?.forEach(
+          (warning) => {
+            GraphqlMockingContextLogger.warning(warning, sequenceId);
+          }
+        );
+      }
+      res.json(operationResponse);
+    } else {
+      res.send(operationResponse);
+    }
   });
 
   router.post('/register-schema', (req, res) => {
-    const {schema, options} = req.body;
+    const {schema, options = {}} = req.body;
     try {
       apolloServerManager.createApolloServer(schema, options);
     } catch (error) {
