@@ -469,7 +469,8 @@ will resolve as:
 First, create a custom link to attach `sequenceId` as a header if it is present.
 
 ```typescript
-import {ApolloLink} from '@apollo/client';
+import {ApolloLink, HttpLink, concat} from '@apollo/client';
+import fetch from 'cross-fetch';
 
 const setCustomHeaders = new ApolloLink((operation, forward) => {
   operation.setContext(({headers = {}}) => ({
@@ -481,16 +482,16 @@ const setCustomHeaders = new ApolloLink((operation, forward) => {
 
   return forward(operation);
 });
+
+const httpLink = new HttpLink({uri, fetch});
+const client = new ApolloClient({
+  ...,
+  concat(setCustomHeaders, httpLink),
+});
+
 ```
 
 Then you need to pass it to apollo client
-
-```typescript
-const client = new ApolloClient({
-    ...,
-    link: setCustomHeaders,
-  });
-```
 
 #### Required server setup
 

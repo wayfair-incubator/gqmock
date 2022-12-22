@@ -75,8 +75,10 @@ const graphqlRoutes = (
 
     res.status(statusCode);
 
-    if (operationResponse === null || operationResponse instanceof Object) {
-      if (operationResponse && 'warnings' in operationResponse) {
+    if (operationResponse === null) {
+      res.end();
+    } else if (operationResponse instanceof Object) {
+      if ('warnings' in operationResponse) {
         (operationResponse as SeededOperationResponse).warnings?.forEach(
           (warning) => {
             GraphqlMockingContextLogger.warning(warning, sequenceId);
