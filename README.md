@@ -466,8 +466,8 @@ will resolve as:
 
 #### Required client setup
 
-* Create a custom link to attach `sequenceId` as a header if it is present. 
-* Configure it into your `ApolloClient`'s link chain
+- Create a custom link to attach `sequenceId` as a header if it is present.
+- Configure it into your `ApolloClient`'s link chain
 
 ```typescript
 import {ApolloLink, HttpLink, concat} from '@apollo/client';
@@ -490,7 +490,6 @@ const client = new ApolloClient({
   // other configuration here
   link: concat(setCustomHeaders, httpLink),
 });
-
 ```
 
 #### Required server setup
