@@ -467,7 +467,7 @@ will resolve as:
 #### Required client setup
 
 * Create a custom link to attach `sequenceId` as a header if it is present. 
-* Then you need to pass it to apollo client
+* Configure it into your `ApolloClient`'s link chain
 
 ```typescript
 import {ApolloLink, HttpLink, concat} from '@apollo/client';
