@@ -977,7 +977,7 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
       });
 
       expect(requestResponse.status).toEqual(401);
-      expect(await requestResponse.json()).toEqual(networkErrorMessage);
+      expect(await requestResponse.text()).toEqual('');
     });
   });
 
