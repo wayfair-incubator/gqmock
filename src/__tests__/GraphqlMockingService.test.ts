@@ -145,7 +145,7 @@ describe('GraphqlMockingService', () => {
         },
       }).then((res) => res.json());
 
-      expect(operationResult).toEqual({data: networkErrorMessage});
+      expect(operationResult).toEqual(networkErrorMessage);
     });
 
     it('should return unmerged mock if no seeds are found', async () => {
@@ -532,7 +532,7 @@ describe('GraphqlMockingService', () => {
       });
 
       expect(secondOperationResult).toEqual(secondMock);
-      expect(thirdOperationResult).toEqual({data: thirdMock});
+      expect(thirdOperationResult).toEqual(thirdMock);
     });
 
     it('should support subgraph schemas', async () => {
@@ -818,6 +818,166 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
       expect(firstOperationResult.data.productByName.id).not.toBe(
         secondOperationResult.data.productByName.id
       );
+    });
+
+    it('should allow changing http statusCode for operation seeds', async () => {
+      const mockingContext = mockingService.createContext();
+      const operationName = 'productByName';
+      await mockingContext.operation(
+        operationName,
+        {
+          data: {
+            productByName: {
+              name: 'Flagship Desk',
+              variants: {
+                name: 'office desk',
+                tags: {value: 'adjustable', $length: 3},
+                $length: 3,
+              },
+            },
+          },
+        },
+        {name: 'desk'},
+        {statusCode: 201}
+      );
+
+      const operationResponse = await fetch(
+        `http://localhost:${port}/graphql`,
+        {
+          method: 'post',
+          body: JSON.stringify({
+            operationName,
+            query:
+              'query productByName($name: String!) { productByName(name: $name) { name, dimensions { length, width, height }, variants { name } } }',
+            variables: {name: 'desk'},
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'mocking-sequence-id': mockingContext.sequenceId,
+          },
+        }
+      );
+
+      expect(operationResponse.status).toEqual(201);
+      expect(await operationResponse.json()).toEqual({
+        data: {
+          __typename: 'Query',
+          productByName: expect.objectContaining({
+            __typename: 'Product',
+            name: 'Flagship Desk',
+            variants: [
+              {
+                __typename: 'ProductVariant',
+                name: 'office desk',
+              },
+              {
+                __typename: 'ProductVariant',
+                name: 'office desk',
+              },
+              {
+                __typename: 'ProductVariant',
+                name: 'office desk',
+              },
+            ],
+          }),
+        },
+        warnings: [
+          'Skipping "data.productByName.variants.tags": key not found in source.',
+        ],
+      });
+    });
+
+    it('should allow changing http statusCode for network error seeds', async () => {
+      const operationName = 'productBySku';
+      const networkErrorMessage = {message: 'this will cause a network error'};
+      const mockingContext = mockingService.createContext();
+      await mockingContext.networkError(
+        operationName,
+        networkErrorMessage,
+        {
+          sku: 'network error',
+        },
+        {statusCode: 401}
+      );
+
+      const requestResponse = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'network error'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      });
+
+      expect(requestResponse.status).toEqual(401);
+      expect(await requestResponse.json()).toEqual(networkErrorMessage);
+    });
+
+    it('should support plain text network errors', async () => {
+      const operationName = 'productBySku';
+      const networkErrorMessage = 'this will cause a network error';
+      const mockingContext = mockingService.createContext();
+      await mockingContext.networkError(
+        operationName,
+        networkErrorMessage,
+        {
+          sku: 'network error',
+        },
+        {statusCode: 401}
+      );
+
+      const requestResponse = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'network error'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      });
+
+      expect(requestResponse.status).toEqual(401);
+      expect(await requestResponse.text()).toEqual(networkErrorMessage);
+    });
+
+    it('should support null network errors', async () => {
+      const operationName = 'productBySku';
+      const networkErrorMessage = null;
+      const mockingContext = mockingService.createContext();
+      await mockingContext.networkError(
+        operationName,
+        networkErrorMessage,
+        {
+          sku: 'network error',
+        },
+        {statusCode: 401}
+      );
+
+      const requestResponse = await fetch(`http://localhost:${port}/graphql`, {
+        method: 'post',
+        body: JSON.stringify({
+          operationName,
+          query:
+            'query productBySku($sku: String!) { productBySku(sku: $sku) { name, dimensions { length, width, height }, variants { name, tags { value } } } }',
+          variables: {sku: 'network error'},
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'mocking-sequence-id': mockingContext.sequenceId,
+        },
+      });
+
+      expect(requestResponse.status).toEqual(401);
+      expect(await requestResponse.text()).toEqual('');
     });
   });
 

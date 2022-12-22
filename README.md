@@ -26,6 +26,11 @@
     - [`GraphqlMockingContext.sequenceId`](#graphqlmockingcontextsequenceid)
     - [`async GraphqlMockingContext.operation`](#async-graphqlmockingcontextoperation)
     - [`async GraphqlMockingContext.networkError`](#async-graphqlmockingcontextnetworkerror)
+  - [Mock server endpoints](#mock-server-endpoints)
+    - [POST `http:localhost:<port>/graphql`](#post-httplocalhostportgraphql)
+    - [POST `http:localhost:<port>/graphql/register-schema`](#post-httplocalhostportgraphqlregister-schema)
+    - [POST `http:localhost:<port>/seed/operation`](#post-httplocalhostportseedoperation)
+    - [POST `http:localhost:<port>/seed/network-error`](#post-httplocalhostportseednetwork-error)
 - [Usage](#usage)
   - [Unit testing](#unit-testing)
   - [Chaining multiple seeds](#chaining-multiple-seeds)
@@ -34,6 +39,9 @@
       - [List long-hand notation](#list-long-hand-notation)
       - [List short-hand notation](#list-short-hand-notation)
   - [Faker.js support](#fakerjs-support)
+  - [Setup outside of testing environment](#setup-outside-of-testing-environment)
+    - [Required client setup](#required-client-setup)
+    - [Required server setup](#required-server-setup)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -57,12 +65,18 @@ Frontends and Backends becomes more difficult and coupled in undesired ways.
 
 ### The solution
 
-`@wayfair/gqlmock` offers an easy way to seed the data returned by GraphQL
+`@wayfair/gqmock` offers an easy way to seed the data returned by GraphQL
 operations. It masks the complexities of managing a mock server implementation
 and instead exposes a declarative API for expressing the deterministic data you
 need in your tests. There is no additional overhead for adding more tests to
 your test suite, and because each test has a unique context, running tests in
 parallel is 💯 supported!
+
+`@wayfair/gqmock` is an HTTP server which means that you can use it also outside
+of test environment for fast feature development. On top of that, if you cannot
+use the Node.js API that ships with this module, you can easily have the mock
+server running in a container and call the endpoints documented below to
+interact with the server.
 
 ## Getting Started
 
@@ -106,11 +120,12 @@ Stops the mocking server.
 
 Registers a schema with the mock server.
 
-| Parameter Name        | Required | Description                                           | Type   | Default |
-| --------------------- | -------- | ----------------------------------------------------- | ------ | ------- |
-| `schema`              | Yes      | A valid GraphQL schema                                | string |         |
-| `options`             | No       | Schema registration options                           | object |         |
-| `options.fakerConfig` | No       | Map of fields to return realistic data using faker.js | object |         |
+| Parameter Name        | Required | Description                                           | Type    | Default |
+| --------------------- | -------- | ----------------------------------------------------- | ------- | ------- |
+| `schema`              | Yes      | A valid GraphQL schema                                | string  |         |
+| `options`             | No       | Schema registration options                           | object  |         |
+| `options.fakerConfig` | No       | Map of fields to return realistic data using faker.js | object  | {}      |
+| `options.subgraph`    | No       | Is the schema a subgraph schema                       | boolean | false   |
 
 #### `GraphqlMockingService.createContext`
 
@@ -146,31 +161,95 @@ const mockServiceLink = new ApolloLink((operation, forward) => {
 
 Registers a seed for a GraphQL operation.
 
-| Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
-| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- |
-| `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
-| `operationSeedResponse`        | Yes      | See specific properties                                                                | object   |                            |
-| `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
-| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            |
-| `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
-| `options`                      | No       | See specific properties                                                                | object   | {}                         |
-| `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
-| `options.partialArgs`          | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
+| Parameter Name            | Required | Description                                                                            | Type     | Default                    |
+| ------------------------- | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- |
+| `operationName`           | Yes      | Name of the GraphQL operation                                                          | string   |                            |
+| `seedResponse`            | Yes      | See specific properties                                                                | object   |                            |
+| `seedResponse.data`       | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
+| `seedResponse.errors`     | No       | Errors to return                                                                       | object[] |                            |
+| `operationMatchArguments` | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
+| `options`                 | No       | See specific properties                                                                | object   | {}                         |
+| `options.usesLeft`        | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
+| `options.partialArgs`     | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
+| `options.statusCode`      | No       | HTTP response status code of the response                                              | number   | 200                        |
 
 #### `async GraphqlMockingContext.networkError`
 
 Registers a seed for a network error.
 
+| Parameter Name            | Required | Description                                                                            | Type                     | Default                    |
+| ------------------------- | -------- | -------------------------------------------------------------------------------------- | ------------------------ | -------------------------- |
+| `operationName`           | Yes      | Name of the GraphQL operation                                                          | string                   |                            |
+| `seedResponse`            | Yes      | Error that will be sent from /graphql endpoint                                         | object or string or null |                            |
+| `operationMatchArguments` | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object                   | {}                         |
+| `options`                 | No       | See specific properties                                                                | object                   | {}                         |
+| `options.usesLeft`        | No       | Uses left before discarding the seed                                                   | number                   | seed doesn't get discarded |
+| `options.partialArgs`     | No       | Allow partial matching of query arguments with the seed arguments                      | boolean                  | false                      |
+| `options.statusCode`      | No       | HTTP response status code of the response                                              | number                   | 500                        |
+
+### Mock server endpoints
+
+#### POST `http:localhost:<port>/graphql`
+
+Send GraphQL queries to this endpoint to retrieve mocked data. Seeds are
+overlaid onto the response if they were previously registered. The
+`mocking-sequence-id` needs to be sent with every request. This can be done
+automatically by configuring a custom Apollo Link for an Apollo Client. In order
+to use the registered seeds, the `mocking-sequence-id` header needs to match the
+`sequeneceId` used when the seed was registered.
+
+| Parameter Name                | Required | Description                                                         | Type   | Default |
+| ----------------------------- | -------- | ------------------------------------------------------------------- | ------ | ------- |
+| `body.operationName`          | Yes      | Name of the GraphQL operation                                       | string |         |
+| `body.query`                  | Yes      | GraphQL query                                                       | string |         |
+| `body.variables`              | No       | GraphQL query variables                                             | object | {}      |
+| `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string |         |
+
+#### POST `http:localhost:<port>/graphql/register-schema`
+
+Schema needs to be registered first before mocked data can be retrieved.
+
+| Parameter Name                | Required | Description                                                         | Type    | Default |
+| ----------------------------- | -------- | ------------------------------------------------------------------- | ------- | ------- |
+| `body.schema`                 | Yes      | GraphQL SDL schema                                                  | string  |         |
+| `body.options`                | No       | See specific options                                                | object  | {}      |
+| `body.options.fakerConfig`    | No       | Faker.js config for GraphQL type fields                             | object  | {}      |
+| `body.options.subgraph`       | No       | Is the schema a subgraph schema                                     | boolean | false   |
+| `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string  |
+
+#### POST `http:localhost:<port>/seed/operation`
+
+Use this endpoint to register operation seeds. You can register multiple seeds
+for the same operation. If there are multiple matched seeds then the one
+registered first will be used.
+
 | Parameter Name                 | Required | Description                                                                            | Type     | Default                    |
 | ------------------------------ | -------- | -------------------------------------------------------------------------------------- | -------- | -------------------------- |
-| `operationName`                | Yes      | Name of the GraphQL operation                                                          | string   |                            |
-| `operationSeedResponse`        | Yes      | Seed to be merged with the default apollo server mock                                  | object   |                            |
-| `operationSeedResponse.data`   | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
-| `operationSeedResponse.errors` | No       | Errors to return                                                                       | object[] |                            |
-| `operationMatchArguments`      | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
-| `options`                      | No       | See specific properties                                                                | object   | {}                         |
-| `options.usesLeft`             | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
-| `options.partialArgs`          | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
+| `body.sequenceId`              | Yes      | Unique id of the use case context used to connect or separate seeds                    | string   |                            |
+| `body.operationName`           | Yes      | Name of the GraphQL operation                                                          | string   |                            |
+| `body.seedResponse`            | Yes      | See specific properties                                                                | object   |                            |
+| `body.seedResponse.data`       | No       | Data to be merged with the default apollo server mock                                  | object   | {}                         |
+| `body.seedResponse.errors`     | No       | Errors to return                                                                       | object[] |                            |
+| `body.operationMatchArguments` | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object   | {}                         |
+| `body.options.usesLeft`        | No       | Uses left before discarding the seed                                                   | number   | seed doesn't get discarded |
+| `body.options.partialArgs`     | No       | Allow partial matching of query arguments with the seed arguments                      | boolean  | false                      |
+| `body.options.statusCode`      | No       | HTTP response status code of the response                                              | number   | 200                        |
+
+#### POST `http:localhost:<port>/seed/network-error`
+
+Use this endpoint to register network errors caused by executing GraphQL
+queries. For example, you can simulate unauthorized access.
+
+| Parameter Name                 | Required | Description                                                                            | Type                     | Default                    |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------- | ------------------------ | -------------------------- |
+| `body.sequenceId`              | Yes      | Unique id of the use case context used to connect or separate seeds                    | string                   |                            |
+| `body.operationName`           | Yes      | Name of the GraphQL operation                                                          | string                   |                            |
+| `body.seedResponse`            | Yes      | Error that will be sent from /graphql endpoint                                         | object or string or null |                            |
+| `body.operationMatchArguments` | No       | Params used for matching a seed with GraphQL operations. By default matching is exact. | object                   | {}                         |
+| `body.options`                 | No       | See specific properties                                                                | object                   | {}                         |
+| `body.options.usesLeft`        | No       | Uses left before discarding the seed                                                   | number                   | seed doesn't get discarded |
+| `body.options.partialArgs`     | No       | Allow partial matching of query arguments with the seed arguments                      | boolean                  | false                      |
+| `body.options.statusCode`      | No       | HTTP response status code of the response                                              | number                   | 500                        |
 
 ## Usage
 
@@ -240,13 +319,13 @@ await context.operation(/* ... */).operation(/* ... */).networkError(/* ... */);
 
 ### Define operation seed response data
 
-`data` is one of the allowed properties for `operationSeedResponse` registration
+`data` is one of the allowed properties for `seedResponse` registration
 parameter. It is supposed to mimic the query response defined by the registered
 schema. As such, `data` will be a composition of objects and arrays all the way
 to primitive leaf fields. You can define objects in the following way:
 
 ```javascript
-const operationSeedResponse = {
+const seedResponse = {
   data: {
     productBySku: {
       name: 'Flagship Table with Sku',
@@ -260,7 +339,7 @@ const operationSeedResponse = {
 ##### List long-hand notation
 
 ```javascript
-const operationSeedResponse = {
+const seedResponse = {
   data: {
     productBySku: {
       name: 'Flagship Table with Sku',
@@ -292,7 +371,7 @@ prefix for both operations can be defined when the mocking service is
 initialized.
 
 ```javascript
-const operationSeedResponse = {
+const seedResponse = {
   data: {
     productBySku: {
       name: 'Flagship Table with Sku',
@@ -382,6 +461,51 @@ will resolve as:
   }
 }
 ```
+
+### Setup outside of testing environment
+
+#### Required client setup
+
+- Create a custom link to attach `sequenceId` as a header if it is present.
+- Configure it into your `ApolloClient`'s link chain
+
+```typescript
+import {ApolloLink, HttpLink, concat} from '@apollo/client';
+import fetch from 'cross-fetch';
+
+const setCustomHeaders = new ApolloLink((operation, forward) => {
+  operation.setContext(({headers = {}}) => ({
+    headers: {
+      ...headers,
+      ...(sequenceId ? {'mocking-sequence-id': sequenceId} : {}),
+    },
+  }));
+
+  return forward(operation);
+});
+
+const httpLink = new HttpLink();
+
+const client = new ApolloClient({
+  // other configuration here
+  link: concat(setCustomHeaders, httpLink),
+});
+```
+
+#### Required server setup
+
+Start the mocking server and register a schema
+
+```typescript
+import GraphqlMockingService from '@wayfair/gqmock';
+
+const mockingService = new GraphqlMockingService({port: 5000});
+await mockingService.start();
+await mockingService.registerSchema(schema, options); // or register schema by calling the endpoint documented above
+```
+
+That's it. You can now register seeds and call `/graphql` endpoint to get seeded
+data.
 
 ## Roadmap
 

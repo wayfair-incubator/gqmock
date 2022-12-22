@@ -49,19 +49,14 @@ class MockServer {
 
   registerOperationSeed(
     sequenceId: string,
-    {
-      operationName,
-      operationSeedResponse,
-      operationMatchArguments,
-      options = {},
-    }: Seed
+    {operationName, seedResponse, operationMatchArguments, options = {}}: Seed
   ): Promise<Response> {
     return fetch(`http://localhost:${this.port}/seed/operation`, {
       method: 'post',
       body: JSON.stringify({
         sequenceId,
         operationName,
-        operationSeedResponse,
+        seedResponse,
         operationMatchArguments,
         options,
       }),
@@ -73,19 +68,14 @@ class MockServer {
 
   registerNetworkErrorSeed(
     sequenceId: string,
-    {
-      operationName,
-      operationSeedResponse,
-      operationMatchArguments,
-      options = {},
-    }: Seed
+    {operationName, seedResponse, operationMatchArguments, options = {}}: Seed
   ): Promise<Response> {
     return fetch(`http://localhost:${this.port}/seed/network-error`, {
       method: 'post',
       body: JSON.stringify({
         sequenceId,
         operationName,
-        operationSeedResponse,
+        seedResponse,
         operationMatchArguments,
         options,
       }),

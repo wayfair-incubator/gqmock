@@ -1,9 +1,11 @@
 import Joi from 'joi';
 import deepMerge from '../utilities/deepMerge';
 import {
+  NetworkErrorResponse,
   OperationMatchArguments,
   OperationSeedResponse,
   Seed,
+  SeededOperationResponse,
   SeedOptions,
 } from './types';
 import GraphqlMockingContextLogger from '../utilities/Logger';
@@ -20,8 +22,9 @@ type SeedCacheInstance = {
   options: {
     usesLeft: number;
     partialArgs: boolean;
+    statusCode: number;
   };
-  operationSeedResponse: OperationSeedResponse;
+  seedResponse: OperationSeedResponse;
   operationMatchArguments: OperationMatchArguments;
 };
 
@@ -42,9 +45,8 @@ export default class SeedManager {
     switch (type) {
       case SeedType.Operation:
         const operationSeedSchema = Joi.object({
-          type: Joi.string().valid(...Object.values(SeedType)),
           operationName: Joi.string().required(),
-          operationSeedResponse: Joi.object({
+          seedResponse: Joi.object({
             data: Joi.object(),
             errors: Joi.array().items(Joi.string(), Joi.object()),
           })
@@ -56,7 +58,13 @@ export default class SeedManager {
         ({error} = operationSeedSchema.validate(seed));
         break;
       case SeedType.NetworkError:
-        const networkErrorSeedSchema = Joi.object().required();
+        const networkErrorSeedSchema = Joi.object({
+          operationName: Joi.string().required(),
+          seedResponse: Joi.alternatives()
+            .try(Joi.object(), Joi.string(), null)
+            .required(),
+          operationMatchArguments: Joi.object(),
+        });
 
         ({error} = networkErrorSeedSchema.validate(seed));
         break;
@@ -75,25 +83,22 @@ export default class SeedManager {
     sequenceId: string,
     type: SeedType,
     seed: Seed,
-    {usesLeft, partialArgs}: SeedOptions = {}
+    {usesLeft, partialArgs, statusCode}: SeedOptions = {}
   ): void {
     this.validateSequenceId(sequenceId);
     this.validateSeed(type, seed);
 
-    const {
-      operationName,
-      operationSeedResponse,
-      operationMatchArguments = {},
-    } = seed;
+    const {operationName, seedResponse, operationMatchArguments = {}} = seed;
     this.seedCache[sequenceId] ??= {};
     this.seedCache[sequenceId][operationName] ??= [];
     this.seedCache[sequenceId][operationName].push({
       type,
-      operationSeedResponse,
+      seedResponse,
       operationMatchArguments,
       options: {
         usesLeft: usesLeft || -1, // -1 means the seed will never be removed
         partialArgs: partialArgs || false,
+        statusCode: statusCode || (type === SeedType.NetworkError ? 500 : 200),
       },
     });
   }
@@ -192,9 +197,8 @@ export default class SeedManager {
     apolloServerManager: ApolloServerManager;
     query: string;
   }): Promise<{
-    data: Record<string, unknown>;
-    errors?: object[];
-    warnings?: string[];
+    operationResponse: SeededOperationResponse | NetworkErrorResponse;
+    statusCode: number;
   }> {
     const {seed, seedIndex} = this.findSeed(
       sequenceId,
@@ -206,12 +210,10 @@ export default class SeedManager {
       switch (validSeed.type) {
         case SeedType.Operation:
           const errors =
-            validSeed.operationSeedResponse.errors ||
-            operationMock.errors ||
-            [];
+            validSeed.seedResponse.errors || operationMock.errors || [];
           const seededMock = await deepMerge(
             {data: operationMock.data || null},
-            {data: validSeed.operationSeedResponse.data || {}},
+            {data: validSeed.seedResponse.data || {}},
             {
               apolloServerManager,
               query,
@@ -220,18 +222,27 @@ export default class SeedManager {
           );
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
           return {
-            data: seededMock.data.data as Record<string, unknown>,
-            ...(errors.length && {errors}),
-            ...(seededMock.warnings.length && {warnings: seededMock.warnings}),
+            operationResponse: {
+              data: seededMock.data.data as Record<string, unknown>,
+              ...(errors.length && {errors}),
+              ...(seededMock.warnings.length && {
+                warnings: seededMock.warnings,
+              }),
+            },
+            statusCode: validSeed.options.statusCode,
           };
         case SeedType.NetworkError:
           this.maybeDiscardSeed(sequenceId, operationName, seedIndex);
-          return {
-            data: validSeed.operationSeedResponse,
-          };
+          return Promise.resolve({
+            operationResponse: validSeed.seedResponse,
+            statusCode: validSeed.options.statusCode,
+          });
       }
     }
 
-    return operationMock;
+    return {
+      operationResponse: operationMock,
+      statusCode: 200,
+    };
   }
 }

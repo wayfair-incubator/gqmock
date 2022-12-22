@@ -12,14 +12,14 @@ const seedRoutes = (
     const {
       sequenceId,
       operationName,
-      operationSeedResponse,
+      seedResponse,
       operationMatchArguments,
       options,
     } = req.body;
     seedManager.registerSeed(
       sequenceId,
       SeedType.Operation,
-      {operationName, operationSeedResponse, operationMatchArguments},
+      {operationName, seedResponse, operationMatchArguments},
       options
     );
     res.sendStatus(201);
@@ -29,14 +29,14 @@ const seedRoutes = (
     const {
       sequenceId,
       operationName,
-      operationSeedResponse,
+      seedResponse,
       operationMatchArguments,
       options,
     } = req.body;
     seedManager.registerSeed(
       sequenceId,
       SeedType.NetworkError,
-      {operationName, operationSeedResponse, operationMatchArguments},
+      {operationName, seedResponse, operationMatchArguments},
       options
     );
     res.sendStatus(201);

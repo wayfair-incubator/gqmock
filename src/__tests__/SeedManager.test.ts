@@ -10,13 +10,13 @@ describe('Seed Manager', () => {
   });
 
   describe('validateSequenceId', function () {
-    it('should throw at validation if sequenceId is missing', function () {
+    it('should throw at validation if sequenceId is missing', () => {
       expect(() => {
         seedManager.validateSequenceId();
       }).toThrow('sequenceId is required');
     });
 
-    it('should throw at validation if sequenceId is not a string', function () {
+    it('should throw at validation if sequenceId is not a string', () => {
       const sequenceId = 3;
       expect(() => {
         seedManager.validateSequenceId(sequenceId);
@@ -25,11 +25,11 @@ describe('Seed Manager', () => {
   });
 
   describe('registerSeed', function () {
-    it('should register a seed with type "operation"', function () {
+    it('should register a seed with type "operation"', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: 'abc'},
       };
       const type = SeedType.Operation;
@@ -44,20 +44,21 @@ describe('Seed Manager', () => {
         ).seed
       ).toEqual({
         type,
-        operationSeedResponse: seed.operationSeedResponse,
+        seedResponse: seed.seedResponse,
         operationMatchArguments: seed.operationMatchArguments,
         options: {
           usesLeft: -1,
           partialArgs: false,
+          statusCode: 200,
         },
       });
     });
 
-    it('should register a seed with type "network-error', function () {
+    it('should register a seed with type "network-error', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {message: 'this will cause an network error'},
+        seedResponse: {message: 'this will cause an network error'},
         operationMatchArguments: {sku: 'network error'},
       };
       const type = SeedType.NetworkError;
@@ -72,20 +73,21 @@ describe('Seed Manager', () => {
         ).seed
       ).toEqual({
         type,
-        operationSeedResponse: seed.operationSeedResponse,
+        seedResponse: seed.seedResponse,
         operationMatchArguments: seed.operationMatchArguments,
         options: {
           usesLeft: -1,
           partialArgs: false,
+          statusCode: 500,
         },
       });
     });
 
-    it('should throw when trying to register a seed with an unknown type', function () {
+    it('should throw when trying to register a seed with an unknown type', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {message: 'this will cause an network error'},
+        seedResponse: {message: 'this will cause an network error'},
         operationMatchArguments: {sku: 'network error'},
       };
       const type = 'bad-seed-type';
@@ -95,11 +97,11 @@ describe('Seed Manager', () => {
       }).toThrow('Unable to validate seed: Unknown seed type');
     });
 
-    it('should allow to register a seed without matchArguments', function () {
+    it('should allow to register a seed without matchArguments', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {},
       };
       const type = SeedType.Operation;
@@ -114,20 +116,21 @@ describe('Seed Manager', () => {
         ).seed
       ).toEqual({
         type,
-        operationSeedResponse: seed.operationSeedResponse,
+        seedResponse: seed.seedResponse,
         operationMatchArguments: seed.operationMatchArguments,
         options: {
           usesLeft: -1,
           partialArgs: false,
+          statusCode: 200,
         },
       });
     });
 
-    it('should throw when seed does not have the correct shape', function () {
+    it('should throw when seed does not have the correct shape', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {
+        seedResponse: {
           data: {product: 'my product'},
           errors: [],
           extraKey: 'this should not be here',
@@ -138,16 +141,16 @@ describe('Seed Manager', () => {
 
       expect(() => {
         seedManager.registerSeed(sequenceId, type, seed);
-      }).toThrow('"operationSeedResponse.extraKey" is not allowed');
+      }).toThrow('"seedResponse.extraKey" is not allowed');
     });
   });
 
   describe('findSeed', function () {
-    it('should return {} if operation does not have any seeds registered', function () {
+    it('should return {} if operation does not have any seeds registered', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: 'abc'},
       };
 
@@ -158,11 +161,11 @@ describe('Seed Manager', () => {
       ).toEqual({});
     });
 
-    it('should return {} if seed for a given operation and matchArguments is not found', function () {
+    it('should return {} if seed for a given operation and matchArguments is not found', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: 'abc'},
       };
       const type = SeedType.Operation;
@@ -175,11 +178,11 @@ describe('Seed Manager', () => {
       ).toEqual({});
     });
 
-    it('should allow partial args matching', function () {
+    it('should allow partial args matching', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: 'abc', anotherArg: 'test'},
       };
       const type = SeedType.Operation;
@@ -191,20 +194,21 @@ describe('Seed Manager', () => {
         }).seed
       ).toEqual({
         type,
-        operationSeedResponse: seed.operationSeedResponse,
+        seedResponse: seed.seedResponse,
         operationMatchArguments: seed.operationMatchArguments,
         options: {
           usesLeft: -1,
           partialArgs: true,
+          statusCode: 200,
         },
       });
     });
 
-    it('should allow deep args matching', function () {
+    it('should allow deep args matching', () => {
       const sequenceId = 'sequenceId';
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: [{type: '1'}, {type: '2'}]},
       };
       const type = SeedType.Operation;
@@ -216,18 +220,19 @@ describe('Seed Manager', () => {
         }).seed
       ).toEqual({
         type,
-        operationSeedResponse: seed.operationSeedResponse,
+        seedResponse: seed.seedResponse,
         operationMatchArguments: seed.operationMatchArguments,
         options: {
           usesLeft: -1,
           partialArgs: false,
+          statusCode: 200,
         },
       });
     });
   });
 
   describe('mergeOperationResponse', function () {
-    it('should not merge anything if seed is not found', async function () {
+    it('should not merge anything if seed is not found', async () => {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -243,10 +248,13 @@ describe('Seed Manager', () => {
           sequenceId,
           apolloServerManager,
         })
-      ).toEqual(operationMock);
+      ).toEqual({
+        operationResponse: operationMock,
+        statusCode: 200,
+      });
     });
 
-    it('should merge operation response with operation type seeds', async function () {
+    it('should merge operation response with operation type seeds', async () => {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -259,14 +267,17 @@ describe('Seed Manager', () => {
       };
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments: {sku: 'abc'},
       };
       const expectedOperationResult = {
-        data: {
-          product: seed.operationSeedResponse.data.product,
-          dimensions: operationMock.data.dimensions,
+        operationResponse: {
+          data: {
+            product: seed.seedResponse.data.product,
+            dimensions: operationMock.data.dimensions,
+          },
         },
+        statusCode: 200,
       };
 
       const type = SeedType.Operation;
@@ -282,7 +293,7 @@ describe('Seed Manager', () => {
       expect(mergeResult).toEqual(expectedOperationResult);
     });
 
-    it('should prioritize seed errors over mock errors', async function () {
+    it('should prioritize seed errors over mock errors', async () => {
       const sequenceId = 'sequenceId';
       const operationMock = {
         errors: [
@@ -293,19 +304,22 @@ describe('Seed Manager', () => {
       };
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {
+        seedResponse: {
           errors: [{message: 'error registered by the user'}],
         },
         operationMatchArguments: {sku: 'abc'},
       };
       const expectedOperationResult = {
-        data: {},
-        errors: seed.operationSeedResponse.errors,
+        operationResponse: {
+          data: {},
+          errors: seed.seedResponse.errors,
+        },
+        statusCode: 500,
       };
 
       const type = SeedType.Operation;
 
-      seedManager.registerSeed(sequenceId, type, seed);
+      seedManager.registerSeed(sequenceId, type, seed, {statusCode: 500});
       const mergeResult = await seedManager.mergeOperationResponse({
         operationName: seed.operationName,
         variables: seed.operationMatchArguments,
@@ -316,7 +330,7 @@ describe('Seed Manager', () => {
       expect(mergeResult).toEqual(expectedOperationResult);
     });
 
-    it('should merge operation response with network-error type seeds', async function () {
+    it('should merge operation response with network-error type seeds', async () => {
       const sequenceId = 'sequenceId';
       const operationMock = {
         errors: [
@@ -327,12 +341,17 @@ describe('Seed Manager', () => {
       };
       const seed = {
         operationName: 'operationA',
-        operationSeedResponse: {message: 'this will throw an error'},
+        seedResponse: {message: 'this will throw an error'},
         operationMatchArguments: {sku: 'unknown sku'},
       };
       const type = SeedType.NetworkError;
 
-      seedManager.registerSeed(sequenceId, type, seed);
+      const expectedResponse = {
+        operationResponse: seed.seedResponse,
+        statusCode: 500,
+      };
+
+      seedManager.registerSeed(sequenceId, type, seed, {statusCode: 500});
       const mergeResult = await seedManager.mergeOperationResponse({
         operationName: seed.operationName,
         variables: seed.operationMatchArguments,
@@ -341,10 +360,10 @@ describe('Seed Manager', () => {
         schema: null,
         apolloServerManager,
       });
-      expect(mergeResult).toEqual({data: seed.operationSeedResponse});
+      expect(mergeResult).toEqual(expectedResponse);
     });
 
-    it('should discard seeds after being used the number of times provided at registration', async function () {
+    it('should discard seeds after being used the number of times provided at registration', async () => {
       const sequenceId = 'sequenceId';
       const operationMock = {
         data: {
@@ -360,24 +379,24 @@ describe('Seed Manager', () => {
       const operationMatchArguments = {sku: 'abc'};
       const firstSeed = {
         operationName,
-        operationSeedResponse: {data: {product: 'my product'}},
+        seedResponse: {data: {product: 'my product'}},
         operationMatchArguments,
       };
       const secondSeed = {
         operationName,
-        operationSeedResponse: {data: {product: 'second product'}},
+        seedResponse: {data: {product: 'second product'}},
         operationMatchArguments,
       };
       const firstSeedExpectedOperationResult = {
         data: {
-          product: firstSeed.operationSeedResponse.data.product,
+          product: firstSeed.seedResponse.data.product,
           dimensions: operationMock.data.dimensions,
         },
       };
 
       const secondSeedExpectedOperationResult = {
         data: {
-          product: secondSeed.operationSeedResponse.data.product,
+          product: secondSeed.seedResponse.data.product,
           dimensions: operationMock.data.dimensions,
         },
       };
@@ -387,38 +406,42 @@ describe('Seed Manager', () => {
       seedManager.registerSeed(sequenceId, type, firstSeed, {usesLeft: 2});
       seedManager.registerSeed(sequenceId, type, secondSeed);
 
-      const firstMergeResult = await seedManager.mergeOperationResponse({
-        operationName,
-        variables: operationMatchArguments,
-        operationMock,
-        sequenceId,
-        apolloServerManager,
-      });
+      const {operationResponse: firstMergeResult} =
+        await seedManager.mergeOperationResponse({
+          operationName,
+          variables: operationMatchArguments,
+          operationMock,
+          sequenceId,
+          apolloServerManager,
+        });
       expect(firstMergeResult).toEqual(firstSeedExpectedOperationResult);
-      const secondMergeResult = await seedManager.mergeOperationResponse({
-        operationName,
-        variables: operationMatchArguments,
-        operationMock,
-        sequenceId,
-        apolloServerManager,
-      });
+      const {operationResponse: secondMergeResult} =
+        await seedManager.mergeOperationResponse({
+          operationName,
+          variables: operationMatchArguments,
+          operationMock,
+          sequenceId,
+          apolloServerManager,
+        });
       expect(secondMergeResult).toEqual(firstSeedExpectedOperationResult);
       // first seed should be discarded now
-      const thirdMergeResult = await seedManager.mergeOperationResponse({
-        operationName,
-        variables: operationMatchArguments,
-        operationMock,
-        sequenceId,
-        apolloServerManager,
-      });
+      const {operationResponse: thirdMergeResult} =
+        await seedManager.mergeOperationResponse({
+          operationName,
+          variables: operationMatchArguments,
+          operationMock,
+          sequenceId,
+          apolloServerManager,
+        });
       expect(thirdMergeResult).toEqual(secondSeedExpectedOperationResult);
-      const fourthMergeResult = await seedManager.mergeOperationResponse({
-        operationName,
-        variables: operationMatchArguments,
-        operationMock,
-        sequenceId,
-        apolloServerManager,
-      });
+      const {operationResponse: fourthMergeResult} =
+        await seedManager.mergeOperationResponse({
+          operationName,
+          variables: operationMatchArguments,
+          operationMock,
+          sequenceId,
+          apolloServerManager,
+        });
       expect(fourthMergeResult).toEqual(secondSeedExpectedOperationResult);
     });
   });
