@@ -10,6 +10,12 @@ and this project adheres to
 
 ### TBA
 
+## [v0.6.0] - 2023-02-28
+
+### Added
+
+- Dockerfile to support GQMock without Node.js
+
 ## [v0.5.4] - 2022-12-21
 
 ### Fixed
