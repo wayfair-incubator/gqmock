@@ -14,7 +14,7 @@ and this project adheres to
 
 ### Added
 
-- Dockerfile to support GQMock without Node.js
+- GQMock docker support to eliminate Node.js dependency
 
 ## [v0.5.4] - 2022-12-21
 
