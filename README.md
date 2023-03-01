@@ -42,6 +42,7 @@
   - [Setup outside of testing environment](#setup-outside-of-testing-environment)
     - [Required client setup](#required-client-setup)
     - [Required server setup](#required-server-setup)
+  - [Docker support](#docker-support)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -506,6 +507,26 @@ await mockingService.registerSchema(schema, options); // or register schema by c
 
 That's it. You can now register seeds and call `/graphql` endpoint to get seeded
 data.
+
+### Docker support
+
+GQMock was written with Node.js in mind. However, the mocking server can be
+dockerized and used in any environment. A docker image can be built at any time
+by running
+
+```shell
+docker build . -t wayfair-incubator/gqmock
+```
+
+Then you can run the container
+
+```shell
+docker run -dp <port on local port>:5000 wayfair-incubator/gqmock
+```
+
+The running server accepts requests to all documented
+[endpoints](#mock-server-endpoints) on the port specified when starting the
+container.
 
 ## Roadmap
 
