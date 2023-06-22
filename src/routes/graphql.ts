@@ -13,8 +13,11 @@ const graphqlRoutes = (
   }
 ): express.Router => {
   const router = createRouter();
-  router.post('/', async (req, res) => {
-    const {query = '', variables = {}, operationName} = req.body;
+  // Allow additional information in the /graphql route to allow for common patterns
+  // like putting operation names in the path for usage in APM modules
+  router.post('/:operationName?', async (req, res) => {
+    const {query = '', variables = {}} = req.body;
+    const operationName = req.body.operationName || req.params.operationName;
     const sequenceId = req.headers['mocking-sequence-id'] as string;
     if (!operationName) {
       res.status(400);
