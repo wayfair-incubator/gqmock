@@ -35,7 +35,7 @@ class MockServer {
     schema: string,
     options: SchemaRegistrationOptions
   ): Promise<Response> {
-    return fetch(`http://localhost:${this.port}/graphql/register-schema`, {
+    return fetch(`http://localhost:${this.port}/schema/register`, {
       method: 'post',
       body: JSON.stringify({
         schema,

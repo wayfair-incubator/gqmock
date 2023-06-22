@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import graphqlRoutes from '../routes/graphql';
 import seedRoutes from '../routes/seed';
+import schemaRoutes from '../routes/schema';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
 
@@ -30,6 +31,7 @@ export default function createApp(): express.Express {
   });
 
   app.use('/graphql', graphqlRoutes({seedManager, apolloServerManager}));
+  app.use('/schema', schemaRoutes({apolloServerManager}));
   app.use('/seed', seedRoutes({seedManager}));
 
   return app;

@@ -10,6 +10,18 @@ and this project adheres to
 
 ### TBA
 
+## [v1.0.0] - 2023-06-22
+
+### Breaking
+
+- breaking: remove `/graphql/register-schema`. Use new `/schema/register`
+  endpoint instead.
+
+### Added
+
+- feat: add new `/schema/register` endpoint
+- feat: add support for operation names in `/graphql` path
+
 ## [v0.6.0] - 2023-02-28
 
 ### Added

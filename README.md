@@ -28,7 +28,7 @@
     - [`async GraphqlMockingContext.networkError`](#async-graphqlmockingcontextnetworkerror)
   - [Mock server endpoints](#mock-server-endpoints)
     - [POST `http:localhost:<port>/graphql`](#post-httplocalhostportgraphql)
-    - [POST `http:localhost:<port>/graphql/register-schema`](#post-httplocalhostportgraphqlregister-schema)
+    - [POST `http:localhost:<port>/schema/register`](#post-httplocalhostportschemaregister)
     - [POST `http:localhost:<port>/seed/operation`](#post-httplocalhostportseedoperation)
     - [POST `http:localhost:<port>/seed/network-error`](#post-httplocalhostportseednetwork-error)
 - [Usage](#usage)
@@ -190,7 +190,7 @@ Registers a seed for a network error.
 
 ### Mock server endpoints
 
-#### POST `http:localhost:<port>/graphql`
+#### POST `http:localhost:<port>/graphql/:operationName?`
 
 Send GraphQL queries to this endpoint to retrieve mocked data. Seeds are
 overlaid onto the response if they were previously registered. The
@@ -201,12 +201,15 @@ to use the registered seeds, the `mocking-sequence-id` header needs to match the
 
 | Parameter Name                | Required | Description                                                         | Type   | Default |
 | ----------------------------- | -------- | ------------------------------------------------------------------- | ------ | ------- |
-| `body.operationName`          | Yes      | Name of the GraphQL operation                                       | string |         |
+| `body.operationName`_\*_      | Yes      | Name of the GraphQL operation                                       | string |         |
 | `body.query`                  | Yes      | GraphQL query                                                       | string |         |
 | `body.variables`              | No       | GraphQL query variables                                             | object | {}      |
 | `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string |         |
 
-#### POST `http:localhost:<port>/graphql/register-schema`
+_\*: `body.operationName` is not required if the `operationName` is provided in
+the path._
+
+#### POST `http:localhost:<port>/schema/register`
 
 Schema needs to be registered first before mocked data can be retrieved.
 
@@ -397,13 +400,13 @@ const schema = `
         tags: [Tag]
         pictures: [Picture]
     }
-    
+
     type Dimensions {
         length: Int
         width: Int
         height: Int
     }
-    
+
     type Product {
         name: String
         variants: [ProductVariant]
