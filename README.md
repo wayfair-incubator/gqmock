@@ -29,6 +29,7 @@
   - [Mock server endpoints](#mock-server-endpoints)
     - [POST `http:localhost:<port>/graphql`](#post-httplocalhostportgraphql)
     - [POST `http:localhost:<port>/graphql/register-schema`](#post-httplocalhostportgraphqlregister-schema)
+    - [POST `http:localhost:<port>/schema/register`](#post-httplocalhostportschemaregister)
     - [POST `http:localhost:<port>/seed/operation`](#post-httplocalhostportseedoperation)
     - [POST `http:localhost:<port>/seed/network-error`](#post-httplocalhostportseednetwork-error)
 - [Usage](#usage)
@@ -205,6 +206,18 @@ to use the registered seeds, the `mocking-sequence-id` header needs to match the
 | `body.query`                  | Yes      | GraphQL query                                                       | string |         |
 | `body.variables`              | No       | GraphQL query variables                                             | object | {}      |
 | `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string |         |
+
+#### POST `http:localhost:<port>/schema/register`
+
+Schema needs to be registered first before mocked data can be retrieved.
+
+| Parameter Name                | Required | Description                                                         | Type    | Default |
+| ----------------------------- | -------- | ------------------------------------------------------------------- | ------- | ------- |
+| `body.schema`                 | Yes      | GraphQL SDL schema                                                  | string  |         |
+| `body.options`                | No       | See specific options                                                | object  | {}      |
+| `body.options.fakerConfig`    | No       | Faker.js config for GraphQL type fields                             | object  | {}      |
+| `body.options.subgraph`       | No       | Is the schema a subgraph schema                                     | boolean | false   |
+| `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string  |
 
 #### POST `http:localhost:<port>/graphql/register-schema`
 
@@ -397,13 +410,13 @@ const schema = `
         tags: [Tag]
         pictures: [Picture]
     }
-    
+
     type Dimensions {
         length: Int
         width: Int
         height: Int
     }
-    
+
     type Product {
         name: String
         variants: [ProductVariant]
