@@ -201,12 +201,13 @@ to use the registered seeds, the `mocking-sequence-id` header needs to match the
 
 | Parameter Name                | Required | Description                                                         | Type   | Default |
 | ----------------------------- | -------- | ------------------------------------------------------------------- | ------ | ------- |
-| `body.operationName`_*_         | Yes      | Name of the GraphQL operation                                       | string |         |
+| `body.operationName`_\*_      | Yes      | Name of the GraphQL operation                                       | string |         |
 | `body.query`                  | Yes      | GraphQL query                                                       | string |         |
 | `body.variables`              | No       | GraphQL query variables                                             | object | {}      |
 | `headers.mocking-sequence-id` | Yes      | Unique id of the use case context used to connect or separate seeds | string |         |
 
-_*: `body.operationName` is not required if the `operationName` is provided in the path._
+_\*: `body.operationName` is not required if the `operationName` is provided in
+the path._
 
 #### POST `http:localhost:<port>/schema/register`
 

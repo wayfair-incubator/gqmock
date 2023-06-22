@@ -14,7 +14,8 @@ and this project adheres to
 
 ### Breaking
 
-- breaking: remove `/graphql/register-schema`. Use new `/schema/register` endpoint instead.
+- breaking: remove `/graphql/register-schema`. Use new `/schema/register`
+  endpoint instead.
 
 ### Added
 
