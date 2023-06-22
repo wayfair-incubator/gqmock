@@ -91,19 +91,6 @@ const graphqlRoutes = (
     }
   });
 
-  router.post('/register-schema', (req, res) => {
-    const {schema, options = {}} = req.body;
-    try {
-      apolloServerManager.createApolloServer(schema, options);
-    } catch (error) {
-      throw new Error(
-        `Unable to register GraphQL schema: ${(error as Error).message}.`
-      );
-    }
-
-    res.sendStatus(204);
-  });
-
   return router;
 };
 
