@@ -1,10 +1,6 @@
 import express from 'express';
-import {parse} from 'graphql';
-import GraphqlMockingContextLogger from '../utilities/Logger';
 import createRouter from '../utilities/createRouter';
-import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
-import {SeededOperationResponse} from '../seed/types';
 
 const schemaRoutes = (
   {apolloServerManager} = {
