@@ -18,7 +18,7 @@ and this project adheres to
     [Apollo Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox/)
     experience.
   - `PlaygroundUI.GraphiQL`: Serve's the latest version of the
-    [GraphiLQ playground](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
+    [GraphiQL playground](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
   - `PlaygroundUI.None`: Disables the playground UI
 
 ### Fixed
