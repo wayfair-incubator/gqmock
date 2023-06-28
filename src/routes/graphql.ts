@@ -5,14 +5,33 @@ import createRouter from '../utilities/createRouter';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
 import {SeededOperationResponse} from '../seed/types';
+import {GraphQLIDE} from '../GraphQLIDE';
+import graphiqlHtml from '../html/graphiql';
 
 const graphqlRoutes = (
-  {seedManager, apolloServerManager} = {
+  {graphQLIDE, port, seedManager, apolloServerManager} = {
+    graphQLIDE: GraphQLIDE.ApolloSandbox,
+    port: 5001,
     seedManager: new SeedManager(),
     apolloServerManager: new ApolloServerManager(),
   }
 ): express.Router => {
   const router = createRouter();
+
+  // If a GraphQL IDE is configured, set up a GET route to serve it
+  if (graphQLIDE === GraphQLIDE.ApolloSandbox) {
+    router.get('/', (_req, res) => {
+      res.redirect(
+        301,
+        `https://studio.apollographql.com/sandbox/explorer?endpoint=http://localhost:${port}/graphql`
+      );
+    });
+  } else if (graphQLIDE === GraphQLIDE.GraphiQL) {
+    router.get('/', (_req, res) => {
+      res.send(graphiqlHtml);
+    });
+  }
+
   // Allow additional information in the /graphql route to allow for common patterns
   // like putting operation names in the path for usage in APM modules
   router.post('/:operationName?', async (req, res) => {

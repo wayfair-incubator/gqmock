@@ -1,5 +1,6 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
+import {GraphQLIDE} from '../GraphQLIDE';
 import GraphqlMockingService from '../GraphqlMockingService';
 
 const schema = fs.readFileSync(
@@ -1112,6 +1113,62 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
       expect(firstOperationResult.data.productByName.id).not.toBe(
         secondOperationResult.data.productByName.id
       );
+    });
+
+    it('returns the Apollo Sandbox GraphQL IDE by default', async () => {
+      await fetch(`http://localhost:${port}/graphql`, {
+        method: 'get',
+      })
+        .then((res) => {
+          return res.text();
+        })
+        .then((text) => {
+          expect(text).toContain('.apollographql.com');
+        })
+        .catch(() => {
+          throw new Error('Expected a 200 response');
+        });
+    });
+
+    it('returns the GraphiQL GraphQL IDE when configured', async () => {
+      // This is pretty gross. I plan on comming back to refactor this test suite.
+      await mockingService.stop();
+      mockingService = new GraphqlMockingService({
+        port,
+        graphQLIDE: GraphQLIDE.GraphiQL,
+      });
+      await mockingService.start();
+      await fetch(`http://localhost:${port}/graphql`, {
+        method: 'get',
+      })
+        .then((res) => {
+          return res.text();
+        })
+        .then((text) => {
+          expect(text).toContain('GraphiQL');
+        })
+        .catch(() => {
+          throw new Error('Expected a 200 response');
+        });
+    });
+
+    it('should return a 404 when no GraphQL IDE UI is configured', async () => {
+      // This is pretty gross. I plan on comming back to refactor this test suite.
+      await mockingService.stop();
+      mockingService = new GraphqlMockingService({
+        port,
+        graphQLIDE: GraphQLIDE.None,
+      });
+      await mockingService.start();
+      await fetch(`http://localhost:${port}/graphql`, {
+        method: 'get',
+      })
+        .then((res) => {
+          expect(res.status).toEqual(404);
+        })
+        .catch(() => {
+          throw new Error('Expected a 404 response');
+        });
     });
   });
 });
