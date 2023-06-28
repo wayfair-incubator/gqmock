@@ -8,7 +8,9 @@ and this project adheres to
 
 ## [Unreleased]
 
-### TBA
+### Fixed
+
+- fix: don't require sequenceId when executing a query
 
 ## [v1.0.0] - 2023-06-22
 
