@@ -10,6 +10,23 @@ and this project adheres to
 
 ### TBA
 
+## [v1.1.0] - 2023-06-28
+
+### Added
+
+- feat: add support for serving a playground UI from the mock servers `/graphql`
+  route. Three options are available:
+  - **DEFAULT** `PlaygroundUI.ApolloSandbox`: Serve's the
+    [Apollo Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox/)
+    experience.
+  - `PlaygroundUI.GraphiQL`: Serve's the latest version of the
+    [GraphiLQ playground](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
+  - `PlaygroundUI.None`: Disables the playground UI
+
+### Fixed
+
+- fix: don't require sequenceId when executing a query
+
 ## [v1.0.0] - 2023-06-22
 
 ### Breaking

@@ -1,9 +1,11 @@
 import fetch, {Response} from 'node-fetch';
 import createApp from './utilities/createApp';
 import {Seed} from './seed/types';
+import {PlaygroundUI} from './PlaygroundUI';
 
 type MockServerOptions = {
   port?: number;
+  playgroundUI?: PlaygroundUI;
 };
 
 type SchemaRegistrationOptions = {
@@ -11,14 +13,16 @@ type SchemaRegistrationOptions = {
 };
 
 class MockServer {
-  readonly port;
+  readonly port: number;
+  readonly playgroundUI: PlaygroundUI;
   private appServer;
   constructor(options: MockServerOptions) {
     this.port = options.port || 5000;
+    this.playgroundUI = options.playgroundUI || PlaygroundUI.ApolloSandbox;
   }
 
   async start(): Promise<void> {
-    const app = createApp();
+    const app = createApp({playgroundUI: this.playgroundUI, port: this.port});
 
     this.appServer = await app.listen({port: this.port}, () =>
       console.log(

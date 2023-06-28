@@ -27,6 +27,7 @@
     - [`async GraphqlMockingContext.operation`](#async-graphqlmockingcontextoperation)
     - [`async GraphqlMockingContext.networkError`](#async-graphqlmockingcontextnetworkerror)
   - [Mock server endpoints](#mock-server-endpoints)
+    - [GET `http:localhost:<port>/graphql`](#get-httplocalhostportgraphql)
     - [POST `http:localhost:<port>/graphql`](#post-httplocalhostportgraphql)
     - [POST `http:localhost:<port>/schema/register`](#post-httplocalhostportschemaregister)
     - [POST `http:localhost:<port>/seed/operation`](#post-httplocalhostportseedoperation)
@@ -189,6 +190,18 @@ Registers a seed for a network error.
 | `options.statusCode`      | No       | HTTP response status code of the response                                              | number                   | 500                        |
 
 ### Mock server endpoints
+
+#### GET `http:localhost:<port>/graphql/:operationName?`
+
+This endpoint supports a playground UI from the mock servers `/graphql` route.
+Three options are available:
+
+- **DEFAULT** `PlaygroundUI.ApolloSandbox`: Serve's the
+  [Apollo Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox/)
+  experience.
+- `PlaygroundUI.GraphiQL`: Serve's the latest version of the
+  [GraphiLQ playground](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
+- `PlaygroundUI.None`: Disables the playground UI, and therefore this endpoint
 
 #### POST `http:localhost:<port>/graphql/:operationName?`
 

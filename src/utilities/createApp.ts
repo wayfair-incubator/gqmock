@@ -5,11 +5,21 @@ import seedRoutes from '../routes/seed';
 import schemaRoutes from '../routes/schema';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
+import {PlaygroundUI} from '../PlaygroundUI';
 
 /**
+ * @param root0
+ * @param root0.playgroundUI
+ * @param root0.port
  * @returns {express.Express} An express server instance
  */
-export default function createApp(): express.Express {
+export default function createApp({
+  playgroundUI,
+  port,
+}: {
+  playgroundUI: PlaygroundUI;
+  port: number;
+}): express.Express {
   const app = express();
   const seedManager = new SeedManager();
   const apolloServerManager = new ApolloServerManager();
@@ -30,7 +40,10 @@ export default function createApp(): express.Express {
     return res;
   });
 
-  app.use('/graphql', graphqlRoutes({seedManager, apolloServerManager}));
+  app.use(
+    '/graphql',
+    graphqlRoutes({playgroundUI, seedManager, apolloServerManager, port})
+  );
   app.use('/schema', schemaRoutes({apolloServerManager}));
   app.use('/seed', seedRoutes({seedManager}));
 
