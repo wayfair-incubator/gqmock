@@ -119,9 +119,8 @@ export default class SeedManager {
     seed: SeedCacheInstance | Record<string, never>;
     seedIndex: number;
   } {
-    this.validateSequenceId(sequenceId);
-
     if (
+      sequenceId === undefined ||
       !this.seedCache[sequenceId] ||
       !this.seedCache[sequenceId][operationName]
     ) {
