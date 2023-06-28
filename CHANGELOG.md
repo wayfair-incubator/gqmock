@@ -8,10 +8,6 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Fixed
-
-- fix: don't require sequenceId when executing a query
-
 ## [v1.1.0] - 2023-06-28
 
 ### Added
