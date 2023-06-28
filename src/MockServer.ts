@@ -1,11 +1,11 @@
 import fetch, {Response} from 'node-fetch';
 import createApp from './utilities/createApp';
 import {Seed} from './seed/types';
-import {PlaygroundUI} from './PlaygroundUI';
+import {GraphQLIDE} from './GraphQLIDE';
 
 type MockServerOptions = {
   port?: number;
-  playgroundUI?: PlaygroundUI;
+  graphQLIDE?: GraphQLIDE;
 };
 
 type SchemaRegistrationOptions = {
@@ -14,15 +14,15 @@ type SchemaRegistrationOptions = {
 
 class MockServer {
   readonly port: number;
-  readonly playgroundUI: PlaygroundUI;
+  readonly graphQLIDE: GraphQLIDE;
   private appServer;
   constructor(options: MockServerOptions) {
     this.port = options.port || 5000;
-    this.playgroundUI = options.playgroundUI || PlaygroundUI.ApolloSandbox;
+    this.graphQLIDE = options.graphQLIDE || GraphQLIDE.ApolloSandbox;
   }
 
   async start(): Promise<void> {
-    const app = createApp({playgroundUI: this.playgroundUI, port: this.port});
+    const app = createApp({graphQLIDE: this.graphQLIDE, port: this.port});
 
     this.appServer = await app.listen({port: this.port}, () =>
       console.log(

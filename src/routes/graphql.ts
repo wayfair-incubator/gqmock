@@ -5,12 +5,12 @@ import createRouter from '../utilities/createRouter';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
 import {SeededOperationResponse} from '../seed/types';
-import {PlaygroundUI} from '../PlaygroundUI';
+import {GraphQLIDE} from '../GraphQLIDE';
 import graphiqlHtml from '../html/graphiql';
 
 const graphqlRoutes = (
-  {playgroundUI, port, seedManager, apolloServerManager} = {
-    playgroundUI: PlaygroundUI.ApolloSandbox,
+  {graphQLIDE, port, seedManager, apolloServerManager} = {
+    graphQLIDE: GraphQLIDE.ApolloSandbox,
     port: 5001,
     seedManager: new SeedManager(),
     apolloServerManager: new ApolloServerManager(),
@@ -18,15 +18,15 @@ const graphqlRoutes = (
 ): express.Router => {
   const router = createRouter();
 
-  // If a playgroundUI is configured, set up a GET route to serve it
-  if (playgroundUI === PlaygroundUI.ApolloSandbox) {
+  // If a GraphQL IDE is configured, set up a GET route to serve it
+  if (graphQLIDE === GraphQLIDE.ApolloSandbox) {
     router.get('/', (_req, res) => {
       res.redirect(
         301,
         `https://studio.apollographql.com/sandbox/explorer?endpoint=http://localhost:${port}/graphql`
       );
     });
-  } else if (playgroundUI === PlaygroundUI.GraphiQL) {
+  } else if (graphQLIDE === GraphQLIDE.GraphiQL) {
     router.get('/', (_req, res) => {
       res.send(graphiqlHtml);
     });

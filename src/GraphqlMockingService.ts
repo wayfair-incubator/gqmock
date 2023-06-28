@@ -1,11 +1,11 @@
 import GraphqlMockingContext from './GraphqlMockingContext';
-import {PlaygroundUI} from './PlaygroundUI';
+import {GraphQLIDE} from './GraphQLIDE';
 import MockServer from './MockServer';
 
 type GraphqlMockingServiceOptions = {
   port?: number;
   subgraph?: boolean;
-  playgroundUI?: PlaygroundUI;
+  graphQLIDE?: GraphQLIDE;
 };
 
 export default class GraphqlMockingService {
@@ -14,7 +14,7 @@ export default class GraphqlMockingService {
   constructor(private options: GraphqlMockingServiceOptions = {}) {
     this.server = new MockServer({
       port: options.port,
-      playgroundUI: options.playgroundUI,
+      graphQLIDE: options.graphQLIDE,
     });
     this.subgraph = options.subgraph || false;
   }

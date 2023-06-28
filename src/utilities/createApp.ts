@@ -5,19 +5,19 @@ import seedRoutes from '../routes/seed';
 import schemaRoutes from '../routes/schema';
 import SeedManager from '../seed/SeedManager';
 import ApolloServerManager from '../ApolloServerManager';
-import {PlaygroundUI} from '../PlaygroundUI';
+import {GraphQLIDE} from '../GraphQLIDE';
 
 /**
- * @param root0
- * @param root0.playgroundUI
- * @param root0.port
+ * @param {object} root0 - The root object
+ * @param {GraphQLIDE} root0.graphQLIDE - The type of GraphQL IDE to use
+ * @param {number} root0.port - The port to run the server on
  * @returns {express.Express} An express server instance
  */
 export default function createApp({
-  playgroundUI,
+  graphQLIDE,
   port,
 }: {
-  playgroundUI: PlaygroundUI;
+  graphQLIDE: GraphQLIDE;
   port: number;
 }): express.Express {
   const app = express();
@@ -42,7 +42,7 @@ export default function createApp({
 
   app.use(
     '/graphql',
-    graphqlRoutes({playgroundUI, seedManager, apolloServerManager, port})
+    graphqlRoutes({graphQLIDE, seedManager, apolloServerManager, port})
   );
   app.use('/schema', schemaRoutes({apolloServerManager}));
   app.use('/seed', seedRoutes({seedManager}));

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
-import {PlaygroundUI} from '../PlaygroundUI';
+import {GraphQLIDE} from '../GraphQLIDE';
 import GraphqlMockingService from '../GraphqlMockingService';
 
 const schema = fs.readFileSync(
@@ -1115,7 +1115,7 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
       );
     });
 
-    it('returns the apollo studio sandbox by default', async () => {
+    it('returns the Apollo Sandbox GraphQL IDE by default', async () => {
       await fetch(`http://localhost:${port}/graphql`, {
         method: 'get',
       })
@@ -1130,12 +1130,12 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
         });
     });
 
-    it('returns the graphiql playground when configured', async () => {
+    it('returns the GraphiQL GraphQL IDE when configured', async () => {
       // This is pretty gross. I plan on comming back to refactor this test suite.
       await mockingService.stop();
       mockingService = new GraphqlMockingService({
         port,
-        playgroundUI: PlaygroundUI.GraphiQL,
+        graphQLIDE: GraphQLIDE.GraphiQL,
       });
       await mockingService.start();
       await fetch(`http://localhost:${port}/graphql`, {
@@ -1152,12 +1152,12 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
         });
     });
 
-    it('should return a 404 when no playground UI is configured', async () => {
+    it('should return a 404 when no GraphQL IDE UI is configured', async () => {
       // This is pretty gross. I plan on comming back to refactor this test suite.
       await mockingService.stop();
       mockingService = new GraphqlMockingService({
         port,
-        playgroundUI: PlaygroundUI.None,
+        graphQLIDE: GraphQLIDE.None,
       });
       await mockingService.start();
       await fetch(`http://localhost:${port}/graphql`, {

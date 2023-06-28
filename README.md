@@ -193,15 +193,16 @@ Registers a seed for a network error.
 
 #### GET `http:localhost:<port>/graphql/:operationName?`
 
-This endpoint supports a playground UI from the mock servers `/graphql` route.
-Three options are available:
+This endpoint supports serving a GraphQL IDE from the mock servers `/graphql`
+route. Three options are available:
 
-- **DEFAULT** `PlaygroundUI.ApolloSandbox`: Serve's the
+- **DEFAULT** `GraphQLIDE.ApolloSandbox`: Serve's the
   [Apollo Sandbox](https://www.apollographql.com/docs/graphos/explorer/sandbox/)
   experience.
-- `PlaygroundUI.GraphiQL`: Serve's the latest version of the
-  [GraphiQL playground](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
-- `PlaygroundUI.None`: Disables the playground UI, and therefore this endpoint
+- `GraphQLIDE.GraphiQL`: Serve's the latest version of
+  [GraphiQL](https://github.com/graphql/graphiql/tree/main/packages/graphiql#readme)
+- `GraphQLIDE.None`: Disables the GraphQL IDE experience, and therefore this
+  endpoint
 
 #### POST `http:localhost:<port>/graphql/:operationName?`
 
