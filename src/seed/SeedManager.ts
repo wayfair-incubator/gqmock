@@ -111,6 +111,33 @@ export default class SeedManager {
     }
   }
 
+  private matchArguments(
+    source: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+    target: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) {
+    const argsMatch = Object.entries(source).every(
+      ([argumentName, argumentValue]) => {
+        if (typeof argumentValue === 'object') {
+          return this.matchArguments(argumentValue, target[argumentName]);
+        }
+        return isEqual(target[argumentName], argumentValue);
+      }
+    );
+
+    return argsMatch;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private argumentCount(args: Record<string, any>) {
+    return Object.entries(args).reduce((acc, [, value]) => {
+      if (typeof value === 'object') {
+        return acc + this.argumentCount(value) + 1;
+      }
+
+      return acc + 1;
+    }, 0);
+  }
+
   private findSeed(
     sequenceId,
     operationName,
@@ -136,16 +163,9 @@ export default class SeedManager {
 
     const seedIndex = this.seedCache[sequenceId][operationName].findIndex(
       (seedDefinition) => {
-        const argsMatch = Object.entries(operationArguments).every(
-          ([argumentName, argumentValue]) => {
-            return (
-              seedDefinition.operationMatchArguments &&
-              isEqual(
-                seedDefinition.operationMatchArguments[argumentName],
-                argumentValue
-              )
-            );
-          }
+        const argsMatch = this.matchArguments(
+          seedDefinition.operationMatchArguments,
+          operationArguments
         );
 
         if (seedDefinition.options.partialArgs) {
@@ -153,8 +173,8 @@ export default class SeedManager {
         }
 
         const sameNumberOfArgs =
-          Object.entries(operationArguments).length ===
-          Object.entries(seedDefinition.operationMatchArguments).length;
+          this.argumentCount(operationArguments) ===
+          this.argumentCount(seedDefinition.operationMatchArguments);
 
         return argsMatch && sameNumberOfArgs;
       }

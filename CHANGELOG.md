@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.1.1] - 2023-08-09
+
+### Fixed
+
+- fix: resolve matching arguments correctly + support nested arguments
+
 ## [v1.1.0] - 2023-06-28
 
 ### Added
