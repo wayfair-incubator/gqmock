@@ -112,7 +112,7 @@ export default class SeedManager {
   }
 
   private matchArguments(
-    source: Record<string, unknown>
+    source: Record<string, unknown>,
     target: Record<string, unknown>
   ) {
     const argsMatch = Object.entries(source).every(
