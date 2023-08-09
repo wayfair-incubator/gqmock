@@ -112,8 +112,8 @@ export default class SeedManager {
   }
 
   private matchArguments(
-    source: Record<string, unknown>,
-    target: Record<string, unknown>
+    source: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+    target: Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
   ) {
     const argsMatch = Object.entries(source).every(
       ([argumentName, argumentValue]) => {
@@ -127,7 +127,8 @@ export default class SeedManager {
     return argsMatch;
   }
 
-  private argumentCount(args: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private argumentCount(args: Record<string, any>) {
     return Object.entries(args).reduce((acc, [, value]) => {
       if (typeof value === 'object') {
         return acc + this.argumentCount(value) + 1;
