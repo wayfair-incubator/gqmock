@@ -183,14 +183,17 @@ describe('Seed Manager', () => {
       const seed = {
         operationName: 'operationA',
         seedResponse: {data: {product: 'my product'}},
-        operationMatchArguments: {sku: 'abc', anotherArg: 'test'},
+        operationMatchArguments: {input: {sku: 'abc'}},
       };
       const type = SeedType.Operation;
 
       seedManager.registerSeed(sequenceId, type, seed, {partialArgs: true});
       expect(
         seedManager.findSeed(sequenceId, seed.operationName, {
-          sku: 'abc',
+          input: {
+            sku: 'abc',
+            anotherArg: 'test',
+          },
         }).seed
       ).toEqual({
         type,
