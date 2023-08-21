@@ -117,7 +117,8 @@ export default class SeedManager {
   ) {
     const argsMatch = Object.entries(source).every(
       ([argumentName, argumentValue]) => {
-        if (typeof argumentValue === 'object') {
+        // null is an object, exclude it from this check
+        if (typeof argumentValue === 'object' && argumentValue != null) {
           return this.matchArguments(argumentValue, target[argumentName]);
         }
         return isEqual(target[argumentName], argumentValue);
@@ -130,7 +131,8 @@ export default class SeedManager {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private argumentCount(args: Record<string, any>) {
     return Object.entries(args).reduce((acc, [, value]) => {
-      if (typeof value === 'object') {
+      // null is an object,  exclude it from this check
+      if (typeof value === 'object' && value != null) {
         return acc + this.argumentCount(value) + 1;
       }
 

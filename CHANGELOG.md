@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.1.2] - 2023-08-21
+
+### Fixed
+
+- fix: handle null arguments
+
 ## [v1.1.1] - 2023-08-09
 
 ### Fixed
