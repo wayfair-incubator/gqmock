@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.2.0] - 2023-11-01
+
+### Added
+
+- feat: allow explicit passing of cors options
+
 ## [v1.1.2] - 2023-08-21
 
 ### Fixed

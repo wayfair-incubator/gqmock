@@ -10,22 +10,25 @@ import {GraphQLIDE} from '../GraphQLIDE';
 /**
  * @param {object} root0 - The root object
  * @param {GraphQLIDE} root0.graphQLIDE - The type of GraphQL IDE to use
+ * @param {corsOptions} root0.corsOptions - Options for cors configuration
  * @param {number} root0.port - The port to run the server on
  * @returns {express.Express} An express server instance
  */
 export default function createApp({
   graphQLIDE,
   port,
+  corsOptions,
 }: {
   graphQLIDE: GraphQLIDE;
   port: number;
+  corsOptions: any; // eslint-disable-line
 }): express.Express {
   const app = express();
   const seedManager = new SeedManager();
   const apolloServerManager = new ApolloServerManager();
 
   app.use(express.json({limit: '5mb'}));
-  app.use(cors());
+  app.use(corsOptions ? cors(corsOptions) : cors());
   app.use(
     express.urlencoded({
       extended: true,
