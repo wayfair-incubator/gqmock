@@ -6,6 +6,7 @@ import {GraphQLIDE} from './GraphQLIDE';
 type MockServerOptions = {
   port?: number;
   graphQLIDE?: GraphQLIDE;
+  corsOptions?: any; // eslint-disable-line
 };
 
 type SchemaRegistrationOptions = {
@@ -15,14 +16,21 @@ type SchemaRegistrationOptions = {
 class MockServer {
   readonly port: number;
   readonly graphQLIDE: GraphQLIDE;
+  readonly corsOptions: any; // eslint-disable-line
+
   private appServer;
   constructor(options: MockServerOptions) {
     this.port = options.port || 5000;
     this.graphQLIDE = options.graphQLIDE || GraphQLIDE.ApolloSandbox;
+    this.corsOptions = options.corsOptions;
   }
 
   async start(): Promise<void> {
-    const app = createApp({graphQLIDE: this.graphQLIDE, port: this.port});
+    const app = createApp({
+      graphQLIDE: this.graphQLIDE,
+      port: this.port,
+      corsOptions: this.corsOptions,
+    });
 
     this.appServer = await app.listen({port: this.port}, () =>
       console.log(
