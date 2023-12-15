@@ -319,4 +319,27 @@ export default class ApolloServerManager {
 
     return [];
   }
+
+  getUnionImplementations(schema: GraphQLSchema, typeName: string): string[] {
+    const schemaAst = parse(printSchema(schema));
+    const unionTypeDefinitions = schemaAst.definitions.filter((definition) => {
+      return definition.kind === Kind.UNION_TYPE_DEFINITION;
+    });
+
+    if (unionTypeDefinitions && unionTypeDefinitions.length > 0) {
+      return (
+        unionTypeDefinitions
+          .filter((unionTypeDefinition) =>
+            // @ts-expect-error We know this is a union type definition
+            unionTypeDefinition?.types?.find(
+              (typeDefinition) => typeDefinition.name.value === typeName
+            )
+          )
+          // @ts-expect-error We know this is a union type definition
+          .map((unionTypeDefinition) => unionTypeDefinition.name.value) || []
+      );
+    }
+
+    return [];
+  }
 }

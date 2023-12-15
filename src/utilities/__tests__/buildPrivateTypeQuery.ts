@@ -9,11 +9,13 @@ const schema = fs.readFileSync(
 
 describe('buildPrivateTypeQuery', function () {
   let apolloServerManager;
+
   beforeAll(() => {
     apolloServerManager = new ApolloServerManager();
     apolloServerManager.createApolloServer(schema, {});
   });
-  it('should build a query for the correct inline fragment', () => {
+
+  it('should build a query for the correct interface inline fragment', () => {
     const rollingKey = 'data.item';
     const query = `query itemQuery {
         item {
@@ -87,6 +89,80 @@ describe('buildPrivateTypeQuery', function () {
         query,
         typeName: 'ItemOne',
         operationName: 'itemQuery',
+        rollingKey,
+        apolloServerManager,
+      })
+    ).toBe(expectedQuery);
+  });
+
+  it('should build a query for the correct union inline fragment', () => {
+    const rollingKey = 'data.random';
+    const query = `query randomQuery {
+        random {
+            __typename
+            id
+            ... on ItemOne {
+                someField1
+                subItem1 {
+                    __typename
+                    id
+                    ... on SubItemOne {
+                        field1
+                    }
+                    ... on SubItemTwo {
+                        field2
+                    }
+                    ... on SubItemThree {
+                        field3
+                    }
+                }
+                products {
+                  name
+                }
+            }
+            ... on ItemTwo {
+                someField2
+            }
+            ... on ItemThree {
+                someField3
+            }
+        }
+    }`;
+
+    const expectedQuery = `query gqmock_privateQuery {
+  gqmock_ItemOne {
+    __typename
+    id
+    someField1
+    subItem1 {
+      __typename
+      id
+      ... on SubItemOne {
+        field1
+        __typename
+      }
+      ... on SubItemTwo {
+        field2
+        __typename
+      }
+      ... on SubItemThree {
+        field3
+        __typename
+      }
+    }
+    products {
+      name
+      __typename
+    }
+  }
+  __typename
+}`;
+
+    expect(
+      buildPrivateTypeQuery({
+        query,
+        typeName: 'ItemOne',
+        operationName: 'randomQuery',
         rollingKey,
         apolloServerManager,
       })
@@ -224,7 +300,7 @@ describe('buildPrivateTypeQuery', function () {
           someField5
         }
       }
-      
+
     query itemsQuery {
       officeItems: items(type: "office") {
         ...commonItemsFields
