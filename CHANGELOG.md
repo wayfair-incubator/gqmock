@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.2.1] - 2023-12-15
+
+### Fixed
+
+- feat: support unions when building private queries
+
 ## [v1.2.0] - 2023-11-01
 
 ### Added
