@@ -8,11 +8,14 @@ const schema = fs.readFileSync(
 );
 
 describe('buildPrivateTypeQuery', function () {
-  let apolloServerManager;
+  let apolloServerManager: ApolloServerManager;
 
   beforeAll(() => {
     apolloServerManager = new ApolloServerManager();
-    apolloServerManager.createApolloServer(schema, {});
+    apolloServerManager.createApolloServer(schema, {
+      subgraph: false,
+      fakerConfig: {},
+    });
   });
 
   it('should build a query for the correct interface inline fragment', () => {
@@ -333,5 +336,108 @@ describe('buildPrivateTypeQuery', function () {
         apolloServerManager,
       })
     ).toBe(expectedQuery);
+  });
+
+  it('should select the deeply nested union of all fields in each selection set', () => {
+    const query = `
+      fragment randomFragment_itemConnection on ItemConnection {
+        totalCount
+        edges {
+          node {
+            id
+            type
+          }
+        }
+      }
+
+      fragment itemConnection_query on Query {
+        itemConnection {
+          edges {
+            cursor
+            node {
+              id
+              ... on ItemOne {
+                id
+                someField1: String
+              }
+            }
+          }
+          ...randomFragment_itemConnection
+        }
+      }
+
+      query itemsQuery {
+        ...itemConnection_query
+      }`;
+
+    const expectedItemConnectionQuery = `query gqmock_privateQuery {
+  gqmock_ItemConnection {
+    edges {
+      cursor
+      node {
+        id
+        ... on ItemOne {
+          id
+          someField1: String
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    totalCount
+    edges {
+      node {
+        id
+        type
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+  __typename
+}`;
+
+    expect(
+      buildPrivateTypeQuery({
+        query: apolloServerManager.expandFragments(query),
+        typeName: 'ItemConnection',
+        operationName: 'itemsQuery',
+        rollingKey: 'data.itemConnection',
+        apolloServerManager,
+      })
+    ).toBe(expectedItemConnectionQuery);
+
+    const expectEdgesQuery = `query gqmock_privateQuery {
+  gqmock_ItemEdge {
+    cursor
+    node {
+      id
+      ... on ItemOne {
+        id
+        someField1: String
+        __typename
+      }
+      __typename
+    }
+    node {
+      id
+      type
+      __typename
+    }
+    __typename
+  }
+  __typename
+}`;
+    expect(
+      buildPrivateTypeQuery({
+        query: apolloServerManager.expandFragments(query),
+        typeName: 'ItemEdge',
+        operationName: 'itemsQuery',
+        rollingKey: 'data.itemConnection.edges',
+        apolloServerManager,
+      })
+    ).toBe(expectEdgesQuery);
   });
 });

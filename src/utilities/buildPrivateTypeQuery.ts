@@ -1,6 +1,7 @@
 import {
   ASTNode,
   FieldNode,
+  FragmentSpreadNode,
   GraphQLSchema,
   InlineFragmentNode,
   Kind,
@@ -74,11 +75,14 @@ export default function ({
     },
   ];
 
-  let isFound = false;
+  const nodesFound: (FieldNode | InlineFragmentNode | FragmentSpreadNode)[] =
+    [];
+
   while (nodesToVisit.length) {
     let {_node} = nodesToVisit[0];
     const {currentKeys} = nodesToVisit[0];
     const key = currentKeys[0];
+
     if (_node && 'selectionSet' in _node) {
       for (const selection of _node.selectionSet?.selections || []) {
         if (keyMatchesFieldNode(selection, key)) {
@@ -92,11 +96,9 @@ export default function ({
             });
           } else if (currentKeys.length === 1) {
             _node = selection;
-            isFound = true;
+            nodesFound.push(_node);
           }
-          break;
         } else if (selection.kind === Kind.INLINE_FRAGMENT) {
-          let isInlineFragmentSelectionFound = false;
           for (const inlineFragmentSelection of selection.selectionSet
             .selections) {
             if (keyMatchesFieldNode(inlineFragmentSelection, key)) {
@@ -111,9 +113,8 @@ export default function ({
                 });
               } else if (currentKeys.length === 1) {
                 _node = inlineFragmentSelection;
-                isFound = true;
+                nodesFound.push(_node);
               }
-              isInlineFragmentSelectionFound = true;
             } else if (
               inlineFragmentSelection.kind !== Kind.FIELD &&
               'selectionSet' in inlineFragmentSelection
@@ -123,21 +124,23 @@ export default function ({
                 currentKeys,
               });
             }
-
-            if (isInlineFragmentSelectionFound) {
-              break;
-            }
-          }
-          if (isInlineFragmentSelectionFound) {
-            break;
           }
         }
       }
     }
     nodesToVisit.shift();
 
-    if (isFound) {
-      node = _node;
+    if (nodesFound.length > 0) {
+      node = nodesFound[0];
+
+      for (let i = 1; i < nodesFound.length; i++) {
+        // @ts-expect-error we don't care
+        node.selectionSet.selections.push(
+          // @ts-expect-error we don't care
+          ...nodesFound[i].selectionSet.selections
+        );
+      }
+
       break;
     }
   }
