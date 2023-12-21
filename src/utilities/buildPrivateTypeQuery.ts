@@ -52,6 +52,10 @@ export default function ({
       apolloServerManager.schema as GraphQLSchema,
       typeName
     );
+  const unionImplementations = apolloServerManager.getUnionImplementations(
+    apolloServerManager.schema as GraphQLSchema,
+    typeName
+  );
   const queryAst = parse(query);
   let node: ASTNode = queryAst.definitions.find((definition) => {
     return (
@@ -158,9 +162,12 @@ export default function ({
             );
           } else if (
             selection.typeCondition &&
-            interfaceImplementations.includes(
+            (unionImplementations.includes(
               selection.typeCondition.name.value
-            )
+            ) ||
+              interfaceImplementations.includes(
+                selection.typeCondition.name.value
+              ))
           ) {
             subQueryNodesToVisit.push(selection);
           }

@@ -55,6 +55,8 @@ type SubItemThree implements SubItem {
   field3: String
 }
 
+union RandomThing = ItemOne | ItemTwo | ItemThree
+
 interface Item {
   id: String
   type: String
@@ -101,6 +103,7 @@ type Query {
   productByName(name: String!): Product
   productBySku(sku: String!): Product
   item: Item
+  random: RandomThing
   items(type: String): [Item]
 }
 
