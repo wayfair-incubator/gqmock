@@ -8,11 +8,17 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.2.2] - 2023-12-21
+
+### Fixed
+
+- fix: support multiple nodes in private queries
+
 ## [v1.2.1] - 2023-12-15
 
 ### Fixed
 
-- feat: support unions when building private queries
+- fix: support unions when building private queries
 
 ## [v1.2.0] - 2023-11-01
 
