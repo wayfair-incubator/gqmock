@@ -105,6 +105,25 @@ type Query {
   item: Item
   random: RandomThing
   items(type: String): [Item]
+  itemConnection(type: String): ItemConnection
+}
+
+type ItemConnection {
+  totalCount: Int
+  edges: [ItemEdge]
+  pageInfo: PageInfo
+}
+
+type PageInfo {
+  hasNextPage: Boolean
+  hasPreviousPage: Boolean
+  startCursor: String
+  endCursor: String
+}
+
+type ItemEdge {
+  node: Item
+  cursor: String
 }
 
 enum SomeEnum {
