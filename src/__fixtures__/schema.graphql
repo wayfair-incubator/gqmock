@@ -1,3 +1,5 @@
+scalar DateTime
+
 type Tag {
   value: String
 }
@@ -24,6 +26,7 @@ type Product {
   name: String
   variants: [ProductVariant]
   dimensions: Dimensions
+  listedAt: DateTime
 }
 
 interface SomeProduct {

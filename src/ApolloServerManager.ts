@@ -71,44 +71,83 @@ export default class ApolloServerManager {
     });
   }
 
-  private createCustomMocks(fakerConfig) {
+  private createCustomMocks(fakerConfig: Record<string, any>) {
     const mocks = {};
-    Object.entries(fakerConfig).forEach(([typeName, typeConfig]) => {
-      const typeFieldMocks = {};
-      Object.entries(
-        typeConfig as Record<string, Record<string, string>>
-      ).forEach(([fieldName, fakerFieldConfig]) => {
-        mocks[typeName] ??= {};
-        const fakerKeys = fakerFieldConfig.method.split('.');
-        let fakerMethod;
-        if (fakerKeys.length) {
-          fakerMethod = faker;
-          while (fakerKeys.length) {
-            const fakerKey = fakerKeys.shift() as string;
-            fakerMethod = fakerMethod[fakerKey];
-            if (!fakerMethod) {
-              break;
-            }
-          }
-        }
-        if (fakerMethod) {
-          typeFieldMocks[fieldName] = () => {
-            if (Array.isArray(fakerFieldConfig.args)) {
-              return fakerMethod(...fakerFieldConfig.args);
-            } else if (!!fakerFieldConfig.args) {
-              return fakerMethod(fakerFieldConfig.args);
-            } else {
-              return fakerMethod();
-            }
-          };
-        }
-      });
-      if (Object.keys(typeFieldMocks).length) {
-        mocks[typeName] = () => typeFieldMocks;
-      }
+
+    Object.entries(fakerConfig).forEach(([key, value]) => {
+      this.createCustomMock({mocks, key, value});
     });
 
     return mocks;
+  }
+
+  private createCustomMock({
+    mocks,
+    key,
+    value,
+  }: {
+    mocks: Record<string, any>;
+    key: string;
+    value: Record<string, any>;
+  }) {
+    if (
+      // detect a faker method definition:
+      //   if there is a `method` key, AND
+      //   if `method` is a string
+      value['method'] &&
+      typeof value['method'] === 'string'
+    ) {
+      const fakerKeys = value.method.split('.');
+      const fakerMethod = this.getFakerMethod(fakerKeys);
+
+      if (!fakerMethod) {
+        return;
+      }
+
+      mocks[key] = () => {
+        if (Array.isArray(value.args)) {
+          return fakerMethod(...value.args);
+        } else if (!!value.args) {
+          return fakerMethod(value.args);
+        } else {
+          return fakerMethod();
+        }
+      };
+
+      return;
+    }
+
+    mocks[key] = {};
+    Object.entries(value).forEach(([innerKey, innerValue]) => {
+      this.createCustomMock({
+        mocks: mocks[key],
+        key: innerKey,
+        value: innerValue,
+      });
+    });
+  }
+
+  private getFakerMethod(
+    fakerKeys: string[]
+  ): (...args: any[]) => any | null | undefined {
+    let fakerMethod = faker;
+
+    while (fakerKeys.length) {
+      const fakerKey = fakerKeys.shift();
+
+      if (!fakerKey) {
+        continue;
+      }
+
+      fakerMethod = fakerMethod[fakerKey];
+
+      if (!fakerMethod) {
+        break;
+      }
+    }
+
+    // @ts-expect-error If we got here, it's either a function or undefined
+    return fakerMethod;
   }
 
   private getAugmentedSchema(schemaSource: string): DocumentNode {
