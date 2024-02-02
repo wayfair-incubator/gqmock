@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.3.0] - 2024-02-02
+
+### Added
+
+- feat: support nested faker configurations (for scalars, etc)
+
 ## [v1.2.2] - 2023-12-21
 
 ### Fixed
