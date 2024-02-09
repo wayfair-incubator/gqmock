@@ -48,6 +48,7 @@ function buildShorthandOverridesMap(object, metaPropertyPrefix) {
  * @param {string} graphqlContext.operationName - GraphQL operation name
  * @param {ApolloServerManager} graphqlContext.apolloServerManager - ApolloServerManager instance
  * @param {object} options - Merge options
+ * @param graphqlContext.variables
  * @returns {object} A merged object and a list of warnings
  */
 async function deepMerge(
@@ -55,6 +56,7 @@ async function deepMerge(
   seed: Record<string, unknown>,
   graphqlContext: {
     query: string;
+    variables: Record<string, unknown>;
     operationName: string;
     apolloServerManager: ApolloServerManager;
   },
@@ -63,7 +65,7 @@ async function deepMerge(
   data: Record<string, unknown>;
   warnings: string[];
 }> {
-  const {query, operationName, apolloServerManager} = graphqlContext;
+  const {query, operationName, apolloServerManager, variables} = graphqlContext;
   const warnings = new Set<string>();
   /**
    * Returns the result of merging target into source
@@ -87,6 +89,7 @@ async function deepMerge(
     ) {
       source = await apolloServerManager.getNewMock({
         query,
+        variables,
         typeName: target.__typename,
         operationName,
         rollingKey,
@@ -107,6 +110,7 @@ async function deepMerge(
             // this should happen regardless of overrides
             const newSourceItemData = await apolloServerManager.getNewMock({
               query,
+              variables,
               typeName: sourceItem.__typename,
               operationName,
               rollingKey: newRollingKey,
@@ -145,6 +149,7 @@ async function deepMerge(
                 // this should happen regardless of overrides
                 const newSourceItemData = await apolloServerManager.getNewMock({
                   query,
+                  variables,
                   typeName: sourceItem.__typename,
                   operationName,
                   rollingKey: newRollingKey,

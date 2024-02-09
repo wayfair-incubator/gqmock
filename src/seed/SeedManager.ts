@@ -238,6 +238,7 @@ export default class SeedManager {
             {
               apolloServerManager,
               query,
+              variables,
               operationName,
             }
           );
