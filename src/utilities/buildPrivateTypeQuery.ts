@@ -6,8 +6,10 @@ import {
   InlineFragmentNode,
   Kind,
   OperationDefinitionNode,
+  VariableDefinitionNode,
   parse,
   print,
+  visit,
 } from 'graphql';
 import ApolloServerManager from '../ApolloServerManager';
 
@@ -57,6 +59,7 @@ export default function ({
     apolloServerManager.schema as GraphQLSchema,
     typeName
   );
+
   const queryAst = parse(query);
   let node: ASTNode = queryAst.definitions.find((definition) => {
     return (
@@ -207,9 +210,37 @@ export default function ({
             },
           ],
         },
+        variableDefinitions: [] as VariableDefinitionNode[],
       },
     ],
   };
+
+  const allVariableDefinitions: VariableDefinitionNode[] = [];
+  visit(queryAst, {
+    VariableDefinition(node) {
+      allVariableDefinitions.push(node);
+    },
+  });
+
+  const variableDefinitions: VariableDefinitionNode[] = [];
+  // @ts-ignore meh
+  visit(newQueryAst, {
+    Variable(node) {
+      const matchingVariable = allVariableDefinitions.find(
+        (definition) => definition.variable.name.value === node.name.value
+      );
+      if (matchingVariable) {
+        const addedToDefinitions = variableDefinitions.find(
+          (definition) => definition.variable.name.value === node.name.value
+        );
+        if (!addedToDefinitions) {
+          variableDefinitions.push(matchingVariable);
+        }
+      }
+    },
+  });
+
+  newQueryAst.definitions[0].variableDefinitions = variableDefinitions;
 
   return apolloServerManager.addTypenameFieldsToQuery(
     print(newQueryAst as ASTNode)

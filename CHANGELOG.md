@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v1.3.1] - 2024-02-08
+
+### Fixed
+
+- fix: support variables nested in query when making private queries
+
 ## [v1.3.0] - 2024-02-02
 
 ### Added

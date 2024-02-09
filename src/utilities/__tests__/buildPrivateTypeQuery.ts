@@ -174,8 +174,8 @@ describe('buildPrivateTypeQuery', function () {
 
   it('should build a query for the correct nested inline fragment', () => {
     const rollingKey = 'data.item.subItem1';
-    const query = `query itemQuery {
-        item {
+    const query = `query itemQuery($first: Int!, $second: String!) {
+        item(first: $first) {
             __typename
             id
             ... on ItemOne {
@@ -183,8 +183,11 @@ describe('buildPrivateTypeQuery', function () {
                 subItem1 {
                     __typename
                     id
+                    fieldWithVariable(first: $first)
                     ... on SubItemOne {
                         field1
+                        anotherWithSameVariable(first: $first)
+                        anotherWithDifferentVariable(second: $second)
                     }
                     ... on SubItemTwo {
                         field2
@@ -209,11 +212,14 @@ describe('buildPrivateTypeQuery', function () {
         }
     }`;
 
-    const expectedQuery = `query gqmock_privateQuery {
+    const expectedQuery = `query gqmock_privateQuery($first: Int!, $second: String!) {
   gqmock_SubItemOne {
     __typename
     id
+    fieldWithVariable(first: $first)
     field1
+    anotherWithSameVariable(first: $first)
+    anotherWithDifferentVariable(second: $second)
   }
   __typename
 }`;

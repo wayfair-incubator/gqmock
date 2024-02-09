@@ -197,11 +197,13 @@ export default class ApolloServerManager {
 
   async getNewMock({
     query,
+    variables,
     typeName,
     operationName,
     rollingKey,
   }: {
     query: string;
+    variables: Record<string, unknown>;
     typeName: string;
     operationName: string;
     rollingKey: string;
@@ -213,9 +215,10 @@ export default class ApolloServerManager {
       rollingKey,
       apolloServerManager: this,
     });
+
     const queryResult = await this.executeOperation({
       query: newQuery,
-      variables: {},
+      variables,
       operationName: this.getFieldName('privateQuery'),
     });
 
