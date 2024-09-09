@@ -8,6 +8,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v2.0.0] - 2024-09-09
+
+### Chore
+
+- Updated many dependencies of this library. See the package.json diff for
+  details.
+
+### Breaking
+
+- `@faker-js/faker` is now a peer dependency and is required to be installed by
+  consuming projects if that functionality is used.
+
 ## [v1.3.1] - 2024-02-08
 
 ### Fixed

@@ -986,7 +986,7 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
     const fakerConfig = {
       Product: {
         id: {
-          method: 'datatype.string',
+          method: 'string.alpha',
         },
         name: {
           method: 'commerce.product',
@@ -994,21 +994,21 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
       },
       Dimensions: {
         length: {
-          method: 'random.numeric',
-          args: 2,
+          method: 'number.int',
+          args: {min: 10, max: 99},
         },
         width: {
-          method: 'random.numeric',
-          args: [2],
+          method: 'number.int',
+          args: {min: 10, max: 99},
         },
         height: {
-          method: 'random.numeric',
-          args: 3,
+          method: 'number.int',
+          args: {min: 100, max: 999},
         },
       },
       ProductVariant: {
         name: {
-          method: 'random.words',
+          method: 'word.words',
           args: 3,
         },
       },
@@ -1019,7 +1019,7 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
         const fakerWithScalars = {
           ...fakerConfig,
           DateTime: {
-            method: 'datatype.datetime',
+            method: 'date.anytime',
           },
         };
         await mockingService.registerSchema(schema, {
@@ -1091,6 +1091,9 @@ query itemsQuery { officeItems: items(type: "office") { ...commonItems3 } homeIt
             name: 'Hello World',
           })
         );
+        operationResult.data[operationName].variants.forEach((variant) => {
+          expect(variant.name.split(' ').length).toEqual(3);
+        });
       });
     });
 

@@ -101,6 +101,9 @@ for installation via [yarn][yarn]
 yarn add --dev @wayfair/gqmock
 ```
 
+NOTE: If you plan on using the `fakerConfig` functionality of this library, you
+must also install the `@faker-js/faker` dev dependency.
+
 ## Library API
 
 ### `GraphqlMockingService`
