@@ -372,12 +372,10 @@ export default class ApolloServerManager {
       return (
         unionTypeDefinitions
           .filter((unionTypeDefinition) =>
-            // @ts-expect-error We know this is a union type definition
             unionTypeDefinition?.types?.find(
               (typeDefinition) => typeDefinition.name.value === typeName
             )
           )
-          // @ts-expect-error We know this is a union type definition
           .map((unionTypeDefinition) => unionTypeDefinition.name.value) || []
       );
     }
