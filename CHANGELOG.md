@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [v2.0.1] - 2024-09-09
+
+### Fix
+
+- Revert `@chalk` upgrade due to module import differences with previous version
+
 ## [v2.0.0] - 2024-09-09
 
 ### Chore
